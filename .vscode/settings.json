@@ -1,0 +1,10 @@
+{
+    "rust-analyzer.files.excludeDirs": [
+        "genji_macros/src/insert"
+    ],
+    "rust-analyzer.linkedProjects": [
+        "./Cargo.toml",
+        "./genji_macros/Cargo.toml"
+    ],
+    "rust-analyzer.showUnlinkedFileNotification": false,
+}
