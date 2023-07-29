@@ -1,11 +1,15 @@
-use std::f32::consts::PI;
+use std::{f32::consts::PI, fs::File, io::BufReader, path::Path};
 
 use crate::helpers::{gj2gl, matrix};
 
 pub(crate) mod shaders;
+// use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 use shaders::Shaders;
 
-use glium::{implement_vertex, uniform, Display, Frame, PolygonMode, Surface, VertexBuffer};
+use glium::{
+    implement_vertex, uniform, Display, Frame, PolygonMode, Surface,
+    VertexBuffer,
+};
 
 #[derive(Clone, Copy, Debug)]
 struct Vertex {
@@ -142,7 +146,7 @@ impl SpriteData {
         self.y = y;
         self
     }
-    
+
     pub fn angle(mut self, angle: f32) -> Self {
         self.angle = angle;
         self
@@ -183,7 +187,14 @@ pub enum Sprite {
         font_size: i32,
         ex: SpriteData,
     },
-    // Img{ path: String, data: Option<Texture2D> },
+    Texture {
+        path: String,
+        data: Vec<u8>,
+        dimensions: (u32, u32),
+        w: i32,
+        h: i32,
+        ex: SpriteData,
+    },
 }
 
 impl Sprite {
@@ -197,6 +208,35 @@ impl Sprite {
 
     pub fn triangle(w: i32, h: i32, ex: SpriteData) -> Self {
         Self::Triangle { w, h, ex }
+    }
+
+    pub fn text(s: String, font_size: i32, ex: SpriteData) -> Self {
+        Self::Text { s, font_size, ex }
+    }
+
+    pub fn texture<S: ToString>(path: S, w: i32, h: i32, ex: SpriteData) -> Option<Self> {
+        let path = path.to_string();
+        let image = image::load(
+            BufReader::new(File::open(&path).ok()?),
+            image::ImageFormat::from_extension(
+                Path::new(&path)
+                    .extension()
+                    .map(|e| e.to_str().unwrap_or(""))
+                    .unwrap_or(""),
+            )?,
+        )
+        .ok()?.to_rgba8();
+
+        let dimensions = image.dimensions();
+
+        Some(Self::Texture {
+            path,
+            data: image.into_raw(),
+            dimensions,
+            w,
+            h,
+            ex,
+        })
     }
 
     pub fn draw(&self, target: &mut Frame, d: &Display, shaders: &Shaders) {
@@ -267,7 +307,7 @@ impl Sprite {
                             color: color,
                         },
                     ];
-                    
+
                     VertexBuffer::new(d, &vertices).unwrap()
                 } else {
                     let vertices = [
@@ -320,7 +360,7 @@ impl Sprite {
             Sprite::Triangle { w, h, .. } => {
                 let w = gj2gl::coord(*w) / 2.0;
                 let h = gj2gl::coord(*h) / 2.0;
-                
+
                 let vertices = [
                     Vertex {
                         position: [-w, -h],
@@ -328,22 +368,20 @@ impl Sprite {
                         color,
                         tex_coords: [0.0, 0.0],
                     },
-
                     Vertex {
                         position: [w, -h],
                         normal: [w, -h],
                         color,
                         tex_coords: [1.0, 0.0],
                     },
-
                     Vertex {
                         position: [0.0, h],
                         normal: [0.0, h],
                         color,
                         tex_coords: [0.5, 1.0],
-                    }
+                    },
                 ];
-                
+
                 let vb = VertexBuffer::new(d, &vertices).unwrap();
                 target
                     .draw(
@@ -354,29 +392,118 @@ impl Sprite {
                         &params,
                     )
                     .expect("failed to draw triangle");
-            },
+            }
             Sprite::Text { .. } => todo!("text isn't implemented"),
-            // Sprite::Img { path, data } => {
-            //     if data.is_some() {
-            //         todo!("Drawing images is not yet supported. Tried to draw pre-loaded image `{path}`.");
-            //     } else {
-            //         todo!("Drawing images is not yet supported. Tried to draw unloaded image `{path}`.");
-            //     }
-            // },
+            Sprite::Texture { dimensions, w, h, data, .. } => {
+                let image = glium::texture::RawImage2d::from_raw_rgba_reversed(
+                    &data,
+                    *dimensions,
+                );
+                let texture = glium::Texture2d::new(d, image).unwrap();
+
+                let w = gj2gl::coord(*w) / 2.0;
+                let h = gj2gl::coord(*h) / 2.0;
+
+                let vb = if ex.fill {
+                    let vertices = [
+                        Vertex {
+                            position: [-1.0 * w, 1.0 * h],
+                            normal: [0.0, 1.0],
+                            tex_coords: [0.0, 1.0],
+                            color: color,
+                        },
+                        Vertex {
+                            position: [1.0 * w, 1.0 * h],
+                            normal: [1.0, 1.0],
+                            tex_coords: [1.0, 1.0],
+                            color: color,
+                        },
+                        Vertex {
+                            position: [-1.0 * w, -1.0 * h],
+                            normal: [0.0, 0.0],
+                            tex_coords: [0.0, 0.0],
+                            color: color,
+                        },
+                        Vertex {
+                            position: [1.0 * w, -1.0 * h],
+                            normal: [1.0, 0.0],
+                            tex_coords: [1.0, 0.0],
+                            color: color,
+                        },
+                    ];
+
+                    VertexBuffer::new(d, &vertices).unwrap()
+                } else {
+                    let vertices = [
+                        Vertex {
+                            position: [-w, h],
+                            normal: [0.0, 1.0],
+                            tex_coords: [0.0, 1.0],
+                            color: color,
+                        },
+                        Vertex {
+                            position: [w, h],
+                            normal: [1.0, 1.0],
+                            tex_coords: [1.0, 1.0],
+                            color: color,
+                        },
+                        Vertex {
+                            position: [w, -h],
+                            normal: [1.0, 0.0],
+                            tex_coords: [1.0, 0.0],
+                            color: color,
+                        },
+                        Vertex {
+                            position: [-w, -h],
+                            normal: [0.0, 0.0],
+                            tex_coords: [0.0, 0.0],
+                            color: color,
+                        },
+                        Vertex {
+                            position: [-w, h],
+                            normal: [0.0, 1.0],
+                            tex_coords: [0.0, 1.0],
+                            color: color,
+                        },
+                    ];
+
+                    VertexBuffer::new(d, &vertices).unwrap()
+                };
+
+                let uniforms = uniforms.add("tex", texture);
+                
+                target
+                    .draw(
+                        &vb,
+                        glium::index::NoIndices(indices),
+                        &shaders.texture,
+                        &uniforms,
+                        &params,
+                    )
+                    .expect("failed to draw texture");
+            }
         }
     }
 
     /// Returns the basic data for the sprite.
     pub fn sprite_data(&self) -> &SpriteData {
         match self {
-            Sprite::Rect { ex, .. } | Sprite::Circle { ex, .. } | Sprite::Triangle { ex, .. } | Sprite::Text { ex, .. } => ex,
+            Sprite::Rect { ex, .. }
+            | Sprite::Circle { ex, .. }
+            | Sprite::Triangle { ex, .. }
+            | Sprite::Text { ex, .. }
+            | Sprite::Texture { ex, .. } => ex,
         }
     }
 
     /// Returns the basic data for the sprite.
     pub fn sprite_data_mut(&mut self) -> &mut SpriteData {
         match self {
-            Sprite::Rect { ex, .. } | Sprite::Circle { ex, .. } | Sprite::Triangle { ex, .. } | Sprite::Text { ex, .. } => ex,
+            Sprite::Rect { ex, .. }
+            | Sprite::Circle { ex, .. }
+            | Sprite::Triangle { ex, .. }
+            | Sprite::Text { ex, .. }
+            | Sprite::Texture { ex, .. } => ex,
         }
     }
 }
