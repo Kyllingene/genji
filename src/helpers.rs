@@ -1,5 +1,9 @@
 #![allow(dead_code)]
 
+use std::collections::HashMap;
+
+use crate::graphics::Sprite;
+
 /// Conversions from genji units to OpenGL units.
 pub mod gj2gl {
     /// Converts a genji coordinate (-400 - 400) to an OpenGL coordinate (-1.0 - 1.0).
@@ -16,12 +20,14 @@ pub mod gj2gl {
 
 /// Helpers for creating and handling matrices.
 pub mod matrix {
+    use std::f32::consts::PI;
+
     /// Create a perspective matrix from screen dimensions.
     pub fn perspective(dims: (u32, u32)) -> [[f32; 4]; 4] {
         let (width, height) = dims;
         let aspect_ratio = height as f32 / width as f32;
 
-        let fov: f32 = 3.141592 / 3.0;
+        let fov = PI / 3.0f32;
         let zfar = 1024.0;
         let znear = 0.1;
 
@@ -31,11 +37,12 @@ pub mod matrix {
             [f * aspect_ratio, 0.0, 0.0, 0.0],
             [0.0, f, 0.0, 0.0],
             [0.0, 0.0, (zfar + znear) / (zfar - znear), 1.0],
-            [0.0, 0.0, -(2.0 * zfar * znear) / (zfar - znear), 0.0],
+            [0.0, 0.0, -(2.0 * zfar * znear) / (zfar - znear), 1.0],
         ]
     }
 
     /// Create a view matrix from camera information.
+    /// Currently unused.
     pub fn view(position: &[f32; 3], direction: &[f32; 3], up: &[f32; 3]) -> [[f32; 4]; 4] {
         let f = {
             let f = direction;
@@ -75,4 +82,24 @@ pub mod matrix {
             [p[0], p[1], p[2], 1.0],
         ]
     }
+}
+
+/// Transforms a HashMap<_, Sprite> -> Vec<Sprite> for drawing.
+///
+/// Sorts by depth, removing depth-0 (hidden) sprites.
+pub fn sprite_filter<T>(sprites: HashMap<T, Sprite>) -> Vec<Sprite> {
+    let mut sprites: Vec<Sprite> = sprites
+        .into_iter()
+        .filter_map(|(_, s)| {
+            if s.sprite_data().depth == 0 {
+                None
+            } else {
+                Some(s.clone())
+            }
+        })
+        .collect();
+
+    sprites.sort_by(|s1, s2| s1.sprite_data().depth.cmp(&s2.sprite_data().depth));
+
+    sprites
 }

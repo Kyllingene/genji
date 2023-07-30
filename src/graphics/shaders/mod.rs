@@ -13,7 +13,8 @@ impl Shaders {
     pub fn new(d: &Display) -> Self {
         Self {
             shape: Program::from_source(d, SHAPE.0, SHAPE.1, None).expect("error in shape shaders"),
-            texture: Program::from_source(d, TEXTURE.0, TEXTURE.1, None).expect("error in texture shaders"),
+            texture: Program::from_source(d, TEXTURE.0, TEXTURE.1, None)
+                .expect("error in texture shaders"),
         }
     }
 }

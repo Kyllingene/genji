@@ -8,6 +8,9 @@ pub use genji_macros::init;
 pub mod graphics;
 pub mod input;
 pub mod state;
+
+use input::{Key, Keys};
+
 use glium::{glutin, Surface};
 use graphics::{Color, Sprite};
 
@@ -15,10 +18,9 @@ use graphics::{Color, Sprite};
 
 mod helpers;
 
-// const DELTA_MIN: u128 = 20; // 20 = 30fps, 17 = 60fps
-
 enum Message {
     Resize(u32, u32),
+    Keys(Keys),
 }
 
 /// Runs the engine code for genji. Automatically run
@@ -30,7 +32,7 @@ pub fn main<T: Send>(
 ) {
     let mut state = init();
     let mut clear_color = state.clear_color;
-    let mut sprites = state.sprites.clone();
+    let mut sprites = helpers::sprite_filter(state.sprites.clone());
 
     let event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new()
@@ -62,6 +64,9 @@ pub fn main<T: Send>(
                             state.width = w;
                             state.height = h;
                         }
+                        Message::Keys(keys) => {
+                            state.keys = keys;
+                        }
                     }
                 }
 
@@ -79,6 +84,7 @@ pub fn main<T: Send>(
             close(state);
         });
 
+        let mut keys = input::keys();
         event_loop.run(move |ev, _, control_flow| match ev {
             glutin::event::Event::WindowEvent { event, .. } => match event {
                 glutin::event::WindowEvent::Resized(size) => {
@@ -91,6 +97,30 @@ pub fn main<T: Send>(
                     control_flow.set_exit();
                     return;
                 }
+                glutin::event::WindowEvent::KeyboardInput { input, .. } => {
+                    let mut modified = false;
+                    if let Some(ks) = Key::from_virtual(input.virtual_keycode) {
+                        modified = true;
+                        for key in ks {
+                            match input.state {
+                                glutin::event::ElementState::Pressed => keys[key as usize] = true,
+                                glutin::event::ElementState::Released => keys[key as usize] = false,
+                            }
+                        }                        
+                    } else if let Some(key) = Key::from_keycode(input.scancode) {
+                        modified = true;
+                        match input.state {
+                            glutin::event::ElementState::Pressed => keys[key as usize] = true,
+                            glutin::event::ElementState::Released => keys[key as usize] = false,
+                        }
+                    }
+
+                    if modified {
+                        tx_msg
+                            .send(Message::Keys(keys))
+                            .unwrap_or_else(|_| control_flow.set_exit());
+                    }
+                }
 
                 _ => {}
             },
@@ -102,7 +132,7 @@ pub fn main<T: Send>(
             glutin::event::Event::RedrawRequested(_) => {
                 if let Ok(Some((cc, ss))) = rx_sprites.try_recv() {
                     clear_color = cc;
-                    sprites = ss;
+                    sprites = helpers::sprite_filter(ss);
                 }
 
                 let mut target = display.draw();
@@ -112,7 +142,7 @@ pub fn main<T: Send>(
                     target.clear_color_and_depth((col[0], col[1], col[2], col[3]), 1.0);
                 }
 
-                for (_id, sprite) in &sprites {
+                for sprite in &sprites {
                     sprite.draw(&mut target, &display, &shaders);
                 }
 

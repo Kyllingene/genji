@@ -5,6 +5,7 @@ use std::{
 };
 
 use crate::graphics::{Color, Sprite};
+use crate::input::{self, Keys};
 
 /// Hashes any type byte-by-byte.
 ///
@@ -31,6 +32,8 @@ pub struct GameState<T> {
     pub state: T,
     pub sprites: HashMap<u64, Sprite>,
 
+    pub keys: Keys,
+
     pub fps: u128,
     pub delta: u128,
 }
@@ -39,7 +42,7 @@ impl<T> GameState<T> {
     /// Initiates genji's game state. Creates a new window.
     ///
     /// `width` and `height` may be None, defaulting to 640 and 480 respectively.
-    /// `fps` defaults to 30.
+    /// `fps` defaults to 100.
     ///
     /// If `clear_color` is None, the screen is never cleared.
     pub fn new<S: ToString>(
@@ -53,7 +56,7 @@ impl<T> GameState<T> {
         let title = title.to_string();
         let width = width.unwrap_or(640);
         let height = height.unwrap_or(480);
-        let fps = fps.unwrap_or(30);
+        let fps = fps.unwrap_or(100);
 
         Self {
             title,
@@ -64,6 +67,8 @@ impl<T> GameState<T> {
 
             state,
             sprites: HashMap::new(),
+
+            keys: input::keys(),
 
             fps: 1000 / fps,
             delta: 0,

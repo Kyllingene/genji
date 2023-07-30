@@ -6,10 +6,7 @@ pub(crate) mod shaders;
 // use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 use shaders::Shaders;
 
-use glium::{
-    implement_vertex, uniform, Display, Frame, PolygonMode, Surface,
-    VertexBuffer,
-};
+use glium::{implement_vertex, uniform, Display, Frame, PolygonMode, Surface, VertexBuffer};
 
 #[derive(Clone, Copy, Debug)]
 struct Vertex {
@@ -97,6 +94,9 @@ pub struct SpriteData {
     /// The vertical position of the sprite.
     /// Defaults to `0`.
     pub y: i32,
+    /// The z-level of the sprite. `0` hides it.
+    /// Defaults to `1`.
+    pub depth: u32,
     /// The rotation of the sprite, in degrees.
     /// Defaults to `0.0`.
     pub angle: f32,
@@ -147,6 +147,11 @@ impl SpriteData {
         self
     }
 
+    pub fn depth(mut self, depth: u32) -> Self {
+        self.depth = depth;
+        self
+    }
+
     pub fn angle(mut self, angle: f32) -> Self {
         self.angle = angle;
         self
@@ -158,6 +163,7 @@ impl Default for SpriteData {
         Self {
             x: 0,
             y: 0,
+            depth: 1,
             fill: true,
             angle: 0.0,
             stroke_weight: 4,
@@ -225,7 +231,8 @@ impl Sprite {
                     .unwrap_or(""),
             )?,
         )
-        .ok()?.to_rgba8();
+        .ok()?
+        .to_rgba8();
 
         let dimensions = image.dimensions();
 
@@ -394,11 +401,14 @@ impl Sprite {
                     .expect("failed to draw triangle");
             }
             Sprite::Text { .. } => todo!("text isn't implemented"),
-            Sprite::Texture { dimensions, w, h, data, .. } => {
-                let image = glium::texture::RawImage2d::from_raw_rgba_reversed(
-                    &data,
-                    *dimensions,
-                );
+            Sprite::Texture {
+                dimensions,
+                w,
+                h,
+                data,
+                ..
+            } => {
+                let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&data, *dimensions);
                 let texture = glium::Texture2d::new(d, image).unwrap();
 
                 let w = gj2gl::coord(*w) / 2.0;
@@ -471,7 +481,7 @@ impl Sprite {
                 };
 
                 let uniforms = uniforms.add("tex", texture);
-                
+
                 target
                     .draw(
                         &vb,
