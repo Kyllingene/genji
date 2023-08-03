@@ -3,6 +3,7 @@ use glium::{Display, Program};
 const SHAPE: (&str, &str) = (include_str!("shape.vert"), include_str!("shape.frag"));
 const TEXTURE: (&str, &str) = (include_str!("texture.vert"), include_str!("texture.frag"));
 
+/// A "singleton" holding all of the pre-compiled shaders.
 pub struct Shaders {
     pub shape: Program,
     pub texture: Program,

@@ -1,14 +1,47 @@
+use std::ops::{Index, IndexMut};
+
 use glium::glutin::event::VirtualKeyCode;
 
 /// A set of keys. Get a keys state with `keys[key]`.
-pub type Keys = [bool; 77];
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Keys([bool; 77]);
+
+impl Index<Key> for Keys {
+    type Output = bool;
+
+    fn index(&self, index: Key) -> &Self::Output {
+        &self.0[index as usize]
+    }
+    
+}
+
+impl IndexMut<Key> for Keys {
+    fn index_mut(&mut self, index: Key) -> &mut Self::Output {
+        &mut self.0[index as usize]
+    }
+}
+
+impl<T: Into<usize>> Index<T> for Keys {
+    type Output = bool;
+
+    fn index(&self, index: T) -> &Self::Output {
+        &self.0[index.into()]
+    }
+    
+}
+
+impl<T: Into<usize>> IndexMut<T> for Keys {
+    fn index_mut(&mut self, index: T) -> &mut Self::Output {
+        &mut self.0[index.into()]
+    }
+}
 
 pub fn keys() -> Keys {
-    [false; 77]
+    Keys([false; 77])
 }
 
 /// A key. Corresponds to a number (0-76).
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(usize)]
 pub enum Key {
     A,
@@ -286,3 +319,5 @@ impl Key {
         })
     }
 }
+
+

@@ -1,12 +1,12 @@
 use std::{f32::consts::PI, fs::File, io::BufReader, path::Path};
 
-use crate::helpers::{gj2gl, matrix};
+use crate::helpers::gj2gl;
 
 pub(crate) mod shaders;
 // use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 use shaders::Shaders;
 
-use glium::{implement_vertex, uniform, Display, Frame, PolygonMode, Surface, VertexBuffer};
+use glium::{implement_vertex, uniform, Display, Frame, PolygonMode, Surface, VertexBuffer, Blend};
 
 #[derive(Clone, Copy, Debug)]
 struct Vertex {
@@ -56,10 +56,10 @@ impl Color {
     /// Adjusts a color from 0.0-1.0 to 0-255.
     pub fn from_f32(r: f32, g: f32, b: f32, a: f32) -> Self {
         Self {
-            r: r as u8 * 255,
-            g: g as u8 * 255,
-            b: b as u8 * 255,
-            a: a as u8 * 255,
+            r: (r * 255.0) as u8,
+            g: (g * 255.0) as u8,
+            b: (b * 255.0) as u8,
+            a: (a * 255.0) as u8,
         }
     }
 
@@ -227,8 +227,7 @@ impl Sprite {
             image::ImageFormat::from_extension(
                 Path::new(&path)
                     .extension()
-                    .map(|e| e.to_str().unwrap_or(""))
-                    .unwrap_or(""),
+                    .map(|e| e.to_str().unwrap_or(""))?,
             )?,
         )
         .ok()?
@@ -250,11 +249,12 @@ impl Sprite {
         let ex = self.sprite_data();
 
         let mut params = glium::DrawParameters {
-            depth: glium::Depth {
-                test: glium::draw_parameters::DepthTest::IfLess,
-                write: true,
-                ..Default::default()
-            },
+            // depth: glium::Depth {
+            //     test: glium::draw_parameters::DepthTest::IfLess,
+            //     write: true,
+            //     ..Default::default()
+            // },
+            blend: Blend::alpha_blending(),
             ..Default::default()
         };
 
@@ -268,18 +268,18 @@ impl Sprite {
             glium::index::PrimitiveType::LineStrip
         };
 
+        let (s_width, s_height) = target.get_dimensions();
+        let ratio = s_height as f32 / s_width as f32;
         let a = -ex.angle * (PI / 180.0);
         let mat = [
-            [a.cos(), a.sin(), 0.0, 0.0],
+            [a.cos() * ratio, a.sin(), 0.0, 0.0],
             [-a.sin(), a.cos(), 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, (ex.depth as f32) / 256.0, 0.0],
             [gj2gl::coord(ex.x), gj2gl::coord(ex.y), 0.0, 1.0],
         ];
 
-        let perspective = matrix::perspective(target.get_dimensions());
         let uniforms = uniform! {
             matrix: mat,
-            perspective: perspective,
         };
 
         match self {

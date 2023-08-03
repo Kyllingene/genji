@@ -23,6 +23,7 @@ pub mod matrix {
     use std::f32::consts::PI;
 
     /// Create a perspective matrix from screen dimensions.
+    /// Currently unused.
     pub fn perspective(dims: (u32, u32)) -> [[f32; 4]; 4] {
         let (width, height) = dims;
         let aspect_ratio = height as f32 / width as f32;
@@ -84,9 +85,7 @@ pub mod matrix {
     }
 }
 
-/// Transforms a HashMap<_, Sprite> -> Vec<Sprite> for drawing.
-///
-/// Sorts by depth, removing depth-0 (hidden) sprites.
+/// Sorts by depth, removing depth-0 (hidden) sprites. Discards id's.
 pub fn sprite_filter<T>(sprites: HashMap<T, Sprite>) -> Vec<Sprite> {
     let mut sprites: Vec<Sprite> = sprites
         .into_iter()
@@ -99,7 +98,7 @@ pub fn sprite_filter<T>(sprites: HashMap<T, Sprite>) -> Vec<Sprite> {
         })
         .collect();
 
-    sprites.sort_by(|s1, s2| s1.sprite_data().depth.cmp(&s2.sprite_data().depth));
+    sprites.sort_by(|s1, s2| s2.sprite_data().depth.cmp(&s1.sprite_data().depth));
 
     sprites
 }

@@ -36,6 +36,8 @@ pub struct GameState<T> {
 
     pub fps: u128,
     pub delta: u128,
+
+    pub(crate) sprites_changed: bool,
 }
 
 impl<T> GameState<T> {
@@ -72,6 +74,8 @@ impl<T> GameState<T> {
 
             fps: 1000 / fps,
             delta: 0,
+
+            sprites_changed: false,
         }
     }
 
@@ -81,22 +85,40 @@ impl<T> GameState<T> {
     pub fn add_sprite<I>(&mut self, id: &I, s: Sprite) -> u64 {
         let id = hash(id);
         self.sprites.insert(id, s);
+        self.sprites_changed = true;
 
         id
     }
 
-    /// Gets a sprite by id.
+    /// Gets a reference to a sprite by id.
     ///
     /// Note: String literals must be referenced (i.e. `&"foobar"`).
-    pub fn get_sprite<I>(&mut self, id: &I) -> Option<&mut Sprite> {
-        self.sprites.get_mut(&hash(id))
+    pub fn get_sprite<I>(&self, id: &I) -> Option<&Sprite> {
+        self.sprites.get(&hash(id))
+    }
+
+    /// Gets a mutable reference to a sprite by id.
+    ///
+    /// Note: String literals must be referenced (i.e. `&"foobar"`).
+    pub fn get_sprite_mut<I>(&mut self, id: &I) -> Option<&mut Sprite> {
+        let s = self.sprites.get_mut(&hash(id));
+        if s.is_some() {
+            self.sprites_changed = true;
+        }
+
+        s
     }
 
     /// Removes a sprite by id, returning the sprite (if it exists).
     ///
     /// Note: String literals must be referenced (i.e. `&"foobar"`).
     pub fn remove_sprite<I>(&mut self, id: &I) -> Option<Sprite> {
-        self.sprites.remove(&hash(id))
+        let s = self.sprites.remove(&hash(id));
+        if s.is_some() {
+            self.sprites_changed = true;
+        }
+
+        s
     }
 }
 
