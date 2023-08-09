@@ -25,7 +25,7 @@ pub fn main<T: 'static>(
     // close: impl FnOnce(state::GameState<T>) + 'static,
 ) {
     let mut state = init();
-    
+
     let event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new()
         .with_inner_size(glutin::dpi::LogicalSize::new(state.width, state.height))
@@ -62,7 +62,7 @@ pub fn main<T: 'static>(
                             glutin::event::ElementState::Pressed => state.keys[key] = true,
                             glutin::event::ElementState::Released => state.keys[key] = false,
                         }
-                    }                        
+                    }
                 } else if let Some(key) = Key::from_keycode(input.scancode) {
                     match input.state {
                         glutin::event::ElementState::Pressed => state.keys[key] = true,
@@ -75,7 +75,7 @@ pub fn main<T: 'static>(
         },
 
         glutin::event::Event::RedrawEventsCleared => {
-            display.gl_window().window().request_redraw()
+            display.gl_window().window().request_redraw();
         }
 
         glutin::event::Event::RedrawRequested(_) => {
@@ -93,14 +93,14 @@ pub fn main<T: 'static>(
                 closed = true;
                 return;
             }
-            
+
             state.delta = (Instant::now() - last).as_millis();
             if state.delta < state.fps {
                 thread::sleep(Duration::from_millis((state.fps - state.delta) as u64));
                 state.delta = state.fps;
             }
             last = Instant::now();
-            
+
             let mut target = display.draw();
             if state.sprites_changed {
                 sprites = helpers::sprite_filter(state.sprites.clone());

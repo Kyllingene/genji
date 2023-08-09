@@ -19,6 +19,7 @@ pub mod gj2gl {
 }
 
 /// Helpers for creating and handling matrices.
+/// Currently unused.
 pub mod matrix {
     use std::f32::consts::PI;
 

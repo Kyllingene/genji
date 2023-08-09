@@ -2,11 +2,17 @@ use std::{f32::consts::PI, fs::File, io::BufReader, path::Path};
 
 use crate::helpers::gj2gl;
 
+mod text;
+
 pub(crate) mod shaders;
-// use image::{DynamicImage, GenericImageView, ImageBuffer, Rgba};
 use shaders::Shaders;
 
-use glium::{implement_vertex, uniform, Display, Frame, PolygonMode, Surface, VertexBuffer, Blend};
+// pub use ab_glyph as font;
+use ab_glyph::FontArc;
+
+use glium::{implement_vertex, uniform, Blend, Display, Frame, PolygonMode, Surface, VertexBuffer};
+
+use self::text::chtt;
 
 #[derive(Clone, Copy, Debug)]
 struct Vertex {
@@ -189,8 +195,10 @@ pub enum Sprite {
         ex: SpriteData,
     },
     Text {
-        s: String,
-        font_size: i32,
+        text: String,
+        font: FontArc,
+        ch_w: i32,
+        ch_h: i32,
         ex: SpriteData,
     },
     Texture {
@@ -216,8 +224,19 @@ impl Sprite {
         Self::Triangle { w, h, ex }
     }
 
-    pub fn text(s: String, font_size: i32, ex: SpriteData) -> Self {
-        Self::Text { s, font_size, ex }
+    /// Creates a new text sprite.
+    ///
+    /// *NOTE*: ex.
+    pub fn text<S: ToString>(text: S, data: &'static [u8], ch_w: i32, ch_h: i32, ex: SpriteData) -> Option<Self> {
+        let font = FontArc::try_from_slice(data).ok()?;
+        
+        Some(Self::Text {
+            text: text.to_string(),
+            font,
+            ch_w,
+            ch_h,
+            ex,
+        })
     }
 
     pub fn texture<S: ToString>(path: S, w: i32, h: i32, ex: SpriteData) -> Option<Self> {
@@ -239,6 +258,27 @@ impl Sprite {
             path,
             data: image.into_raw(),
             dimensions,
+            w,
+            h,
+            ex,
+        })
+    }
+
+    pub fn texture_from_raw(
+        path: Option<String>,
+        data: Vec<u8>,
+        w: i32,
+        h: i32,
+        ex: SpriteData,
+    ) -> Option<Self> {
+        if data.len() % w as usize != 0 {
+            return None;
+        }
+
+        Some(Self::Texture {
+            path: path.unwrap_or_else(String::new),
+            data,
+            dimensions: (w as u32, h as u32),
             w,
             h,
             ex,
@@ -290,25 +330,25 @@ impl Sprite {
                 let vb = if ex.fill {
                     let vertices = [
                         Vertex {
-                            position: [-1.0 * w, 1.0 * h],
+                            position: [-w, h],
                             normal: [0.0, 1.0],
                             tex_coords: [0.0, 1.0],
                             color: color,
                         },
                         Vertex {
-                            position: [1.0 * w, 1.0 * h],
+                            position: [w, h],
                             normal: [1.0, 1.0],
                             tex_coords: [1.0, 1.0],
                             color: color,
                         },
                         Vertex {
-                            position: [-1.0 * w, -1.0 * h],
+                            position: [-w, -h],
                             normal: [0.0, 0.0],
                             tex_coords: [0.0, 0.0],
                             color: color,
                         },
                         Vertex {
-                            position: [1.0 * w, -1.0 * h],
+                            position: [w, -h],
                             normal: [1.0, 0.0],
                             tex_coords: [1.0, 0.0],
                             color: color,
@@ -400,7 +440,94 @@ impl Sprite {
                     )
                     .expect("failed to draw triangle");
             }
-            Sprite::Text { .. } => todo!("text isn't implemented"),
+            Sprite::Text {
+                text,
+                font,
+                ch_w,
+                ch_h,
+                ex,
+            } => {
+                let mut x = ex.x;
+                let mut y = ex.y;
+                
+                for ch in text.chars() {
+                    // TODO: turn this into a match statement
+                    if ch == '\n' {
+                        x = ex.x;
+                        y += ch_h + 5;
+                        continue;
+                    } else if ch == ' ' {
+                        x += ch_w + 2;
+                        continue;
+                    } else if ch == '\t' {
+                        x += (ch_w + 2) * 4;
+                        continue;
+                    } else if ch == '\r' {
+                        x = ex.x;
+                        continue;
+                    }
+
+                    let (letter, scale_w, scale_h) =
+                        chtt(ch, font, ex, d).expect("failed to render character");
+
+                    let w = gj2gl::coord(*ch_w) / 2.0 * scale_w;
+                    let h = gj2gl::coord(*ch_h) / 2.0 * scale_h;
+
+                    let vertical_adjust = gj2gl::coord(*ch_h) - h;
+                    let mat = [
+                        [a.cos() * ratio, a.sin(), 0.0, 0.0],
+                        [-a.sin(), a.cos(), 0.0, 0.0],
+                        [0.0, 0.0, (ex.depth as f32) / 256.0, 0.0],
+                        [gj2gl::coord(x), gj2gl::coord(y) - vertical_adjust, 0.0, 1.0],
+                    ];
+
+                    let uniforms = uniform!{
+                        matrix: mat,
+                        tex: letter,
+                    };
+                    
+                    let vertices = [
+                        Vertex {
+                            position: [-w, h],
+                            normal: [0.0, 1.0],
+                            tex_coords: [0.0, 1.0],
+                            color: color,
+                        },
+                        Vertex {
+                            position: [w, h],
+                            normal: [1.0, 1.0],
+                            tex_coords: [1.0, 1.0],
+                            color: color,
+                        },
+                        Vertex {
+                            position: [-w, -h],
+                            normal: [0.0, 0.0],
+                            tex_coords: [0.0, 0.0],
+                            color: color,
+                        },
+                        Vertex {
+                            position: [w, -h],
+                            normal: [1.0, 0.0],
+                            tex_coords: [1.0, 0.0],
+                            color: color,
+                        },
+                    ];
+
+                    let vb = VertexBuffer::new(d, &vertices).unwrap();
+
+                    target
+                    .draw(
+                        &vb,
+                        glium::index::NoIndices(indices),
+                        &shaders.texture,
+                        &uniforms,
+                        &params,
+                    )
+                    .expect("failed to draw character");
+
+                    x += ch_w + 2;
+                }
+            }
             Sprite::Texture {
                 dimensions,
                 w,
@@ -417,25 +544,25 @@ impl Sprite {
                 let vb = if ex.fill {
                     let vertices = [
                         Vertex {
-                            position: [-1.0 * w, 1.0 * h],
+                            position: [-w, h],
                             normal: [0.0, 1.0],
                             tex_coords: [0.0, 1.0],
                             color: color,
                         },
                         Vertex {
-                            position: [1.0 * w, 1.0 * h],
+                            position: [w, h],
                             normal: [1.0, 1.0],
                             tex_coords: [1.0, 1.0],
                             color: color,
                         },
                         Vertex {
-                            position: [-1.0 * w, -1.0 * h],
+                            position: [-w, -h],
                             normal: [0.0, 0.0],
                             tex_coords: [0.0, 0.0],
                             color: color,
                         },
                         Vertex {
-                            position: [1.0 * w, -1.0 * h],
+                            position: [w, -h],
                             normal: [1.0, 0.0],
                             tex_coords: [1.0, 0.0],
                             color: color,

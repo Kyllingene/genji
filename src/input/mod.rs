@@ -12,7 +12,6 @@ impl Index<Key> for Keys {
     fn index(&self, index: Key) -> &Self::Output {
         &self.0[index as usize]
     }
-    
 }
 
 impl IndexMut<Key> for Keys {
@@ -27,7 +26,6 @@ impl<T: Into<usize>> Index<T> for Keys {
     fn index(&self, index: T) -> &Self::Output {
         &self.0[index.into()]
     }
-    
 }
 
 impl<T: Into<usize>> IndexMut<T> for Keys {
@@ -319,5 +317,3 @@ impl Key {
         })
     }
 }
-
-
