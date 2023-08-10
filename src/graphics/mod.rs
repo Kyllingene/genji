@@ -46,6 +46,7 @@ pub struct Color {
 impl Color {
     /// Creates an opaque white color. Use the builder
     /// pattern to adjust the color.
+    #[inline]
     pub fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
     }
@@ -135,8 +136,9 @@ pub struct SpriteData {
 impl SpriteData {
     /// Creates a new sprite with default values.
     /// See each property to see defaults.
+    #[inline]
     pub fn new() -> Self {
-        return Self::default();
+        Self::default()
     }
 
     /// Sets the horizontal position of the sprite.
@@ -327,7 +329,7 @@ impl Sprite {
         let dimensions = data.dimensions();
 
         Some(Self::Texture {
-            path: path.unwrap_or_else(String::new),
+            path: path.unwrap_or_default(),
             data: data.into_raw(),
             dimensions,
             w,
@@ -384,25 +386,25 @@ impl Sprite {
                             position: [-w, h],
                             normal: [0.0, 1.0],
                             tex_coords: [0.0, 1.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [w, h],
                             normal: [1.0, 1.0],
                             tex_coords: [1.0, 1.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [-w, -h],
                             normal: [0.0, 0.0],
                             tex_coords: [0.0, 0.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [w, -h],
                             normal: [1.0, 0.0],
                             tex_coords: [1.0, 0.0],
-                            color: color,
+                            color,
                         },
                     ];
 
@@ -413,31 +415,31 @@ impl Sprite {
                             position: [-w, h],
                             normal: [0.0, 1.0],
                             tex_coords: [0.0, 1.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [w, h],
                             normal: [1.0, 1.0],
                             tex_coords: [1.0, 1.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [w, -h],
                             normal: [1.0, 0.0],
                             tex_coords: [1.0, 0.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [-w, -h],
                             normal: [0.0, 0.0],
                             tex_coords: [0.0, 0.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [-w, h],
                             normal: [0.0, 1.0],
                             tex_coords: [0.0, 1.0],
-                            color: color,
+                            color,
                         },
                     ];
 
@@ -559,25 +561,25 @@ impl Sprite {
                             position: [-w, h],
                             normal: [0.0, 1.0],
                             tex_coords: [0.0, 1.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [w, h],
                             normal: [1.0, 1.0],
                             tex_coords: [1.0, 1.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [-w, -h],
                             normal: [0.0, 0.0],
                             tex_coords: [0.0, 0.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [w, -h],
                             normal: [1.0, 0.0],
                             tex_coords: [1.0, 0.0],
-                            color: color,
+                            color,
                         },
                     ],
                 )
@@ -602,7 +604,7 @@ impl Sprite {
                 data,
                 ..
             } => {
-                let raw = glium::texture::RawImage2d::from_raw_rgba_reversed(&data, *dimensions);
+                let raw = glium::texture::RawImage2d::from_raw_rgba_reversed(data, *dimensions);
                 let texture = glium::Texture2d::new(d, raw).unwrap();
 
                 let w = gj2gl::coord(*w) / 2.0;
@@ -614,25 +616,25 @@ impl Sprite {
                             position: [-w, h],
                             normal: [0.0, 1.0],
                             tex_coords: [0.0, 1.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [w, h],
                             normal: [1.0, 1.0],
                             tex_coords: [1.0, 1.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [-w, -h],
                             normal: [0.0, 0.0],
                             tex_coords: [0.0, 0.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [w, -h],
                             normal: [1.0, 0.0],
                             tex_coords: [1.0, 0.0],
-                            color: color,
+                            color,
                         },
                     ];
 
@@ -643,31 +645,31 @@ impl Sprite {
                             position: [-w, h],
                             normal: [0.0, 1.0],
                             tex_coords: [0.0, 1.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [w, h],
                             normal: [1.0, 1.0],
                             tex_coords: [1.0, 1.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [w, -h],
                             normal: [1.0, 0.0],
                             tex_coords: [1.0, 0.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [-w, -h],
                             normal: [0.0, 0.0],
                             tex_coords: [0.0, 0.0],
-                            color: color,
+                            color,
                         },
                         Vertex {
                             position: [-w, h],
                             normal: [0.0, 1.0],
                             tex_coords: [0.0, 1.0],
-                            color: color,
+                            color,
                         },
                     ];
 

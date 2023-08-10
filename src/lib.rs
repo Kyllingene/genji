@@ -53,7 +53,6 @@ pub fn main<T: 'static>(
                 }
                 close(&mut state);
                 closed = true;
-                return;
             }
             glutin::event::WindowEvent::KeyboardInput { input, .. } => {
                 if let Some(ks) = Key::from_virtual(input.virtual_keycode) {

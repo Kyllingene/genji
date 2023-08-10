@@ -2,6 +2,8 @@ use ab_glyph::{point, Font, FontArc, Glyph, Point, PxScale, ScaleFont};
 
 use super::SpriteData;
 
+type Pixel = (u8, u8, u8, u8);
+
 fn layout_paragraph<F, SF>(
     font: SF,
     position: Point,
@@ -47,7 +49,7 @@ pub fn render_glyphs(
     font_size: f32,
     text: &str,
     ex: &SpriteData,
-) -> (Vec<Vec<(u8, u8, u8, u8)>>, usize, usize) {
+) -> (Vec<Vec<Pixel>>, usize, usize) {
     let scale = PxScale::from(font_size);
 
     let scaled_font = font.as_scaled(scale);

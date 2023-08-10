@@ -94,7 +94,7 @@ pub fn sprite_filter<T>(sprites: HashMap<T, Sprite>) -> Vec<Sprite> {
             if s.sprite_data().depth == 0 {
                 None
             } else {
-                Some(s.clone())
+                Some(s)
             }
         })
         .collect();
