@@ -37,6 +37,11 @@ pub struct GameState<T> {
     pub fps: u128,
     pub delta: u128,
 
+    /// Whether or not Genji closes when the OS asks it to.
+    pub close_on_request: bool,
+    /// If `!close_on_request`, if Genji has been asked to close.
+    pub asked_to_close: bool,
+
     pub(crate) sprites_changed: bool,
 }
 
@@ -74,6 +79,9 @@ impl<T> GameState<T> {
 
             fps: 1000 / fps,
             delta: 0,
+
+            close_on_request: false,
+            asked_to_close: false,
 
             sprites_changed: false,
         }
