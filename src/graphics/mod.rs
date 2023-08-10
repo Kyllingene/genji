@@ -1,7 +1,7 @@
 use std::{
     f32::consts::PI,
     fs::File,
-    io::{BufReader, Cursor},
+    io::{BufReader, Cursor, Read},
     path::Path,
 };
 
@@ -266,6 +266,26 @@ impl Sprite {
         ex: SpriteData,
     ) -> Option<Self> {
         let font = FontArc::try_from_slice(font_data).ok()?;
+
+        Some(Self::Text {
+            text: text.to_string(),
+            font,
+            font_size,
+            ex,
+        })
+    }
+
+    pub fn text_font_file<S1: ToString, S2: ToString>(
+        text: S1,
+        font: S2,
+        font_size: f32,
+        ex: SpriteData,
+    ) -> Option<Self> {
+        let mut font_file = File::open(font.to_string()).ok()?;
+        let mut font_data = Vec::new();
+        font_file.read_to_end(&mut font_data).ok()?;
+
+        let font = FontArc::try_from_vec(font_data).ok()?;
 
         Some(Self::Text {
             text: text.to_string(),
