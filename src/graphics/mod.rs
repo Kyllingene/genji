@@ -5,14 +5,13 @@ use crate::helpers::gj2gl;
 mod text;
 
 pub(crate) mod shaders;
+use ab_glyph::FontArc;
 use shaders::Shaders;
 
-// pub use ab_glyph as font;
-use ab_glyph::FontArc;
-
-use glium::{implement_vertex, uniform, Blend, Display, Frame, PolygonMode, Surface, VertexBuffer};
-
-use self::text::chtt;
+use glium::{
+    implement_vertex, texture::RawImage2d, uniform, Blend, Display, Frame, PolygonMode, Surface,
+    VertexBuffer,
+};
 
 #[derive(Clone, Copy, Debug)]
 struct Vertex {
@@ -24,36 +23,45 @@ struct Vertex {
 
 implement_vertex!(Vertex, position, normal, color, tex_coords);
 
+/// An RGBA color in byte format.
 #[derive(Debug, Clone, Copy)]
 pub struct Color {
+    /// The red channel of the color.
     pub r: u8,
+    /// The green channel of the color.
     pub g: u8,
+    /// The blue channel of the color.
     pub b: u8,
+    /// The opacity of the color.
     pub a: u8,
 }
 
-/// A color in RGBA, using the 0-255 range.
 impl Color {
-    /// Creates an opaque white color.
+    /// Creates an opaque white color. Use the builder
+    /// pattern to adjust the color.
     pub fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
     }
 
+    /// Sets the red channel of the color.
     pub fn r(mut self, r: u8) -> Self {
         self.r = r;
         self
     }
 
+    /// Sets the green channel of the color.
     pub fn g(mut self, g: u8) -> Self {
         self.g = g;
         self
     }
 
+    /// Sets the blue channel of the color.
     pub fn b(mut self, b: u8) -> Self {
         self.b = b;
         self
     }
 
+    /// Sets the opacity of the color.
     pub fn a(mut self, a: u8) -> Self {
         self.a = a;
         self
@@ -118,48 +126,66 @@ pub struct SpriteData {
 }
 
 impl SpriteData {
+    /// Creates a new sprite with default values.
+    /// See each property to see defaults.
     pub fn new() -> Self {
         return Self::default();
     }
 
-    pub fn fill(mut self, fill: bool) -> Self {
-        self.fill = fill;
-        self
-    }
-
-    pub fn stroke_weight(mut self, stroke_weight: u32) -> Self {
-        self.stroke_weight = stroke_weight;
-        self
-    }
-
-    pub fn color(mut self, color: Color) -> Self {
-        self.color = color;
-        self
-    }
-
+    /// Sets the horizontal position of the sprite.
+    /// Defaults to `0`.
     pub fn x(mut self, x: i32) -> Self {
         self.x = x;
         self
     }
 
+    /// Sets the vertical position of the sprite.
+    /// Defaults to `0`.
     pub fn y(mut self, y: i32) -> Self {
         self.y = y;
         self
     }
 
+    /// Sets the position of the sprite.
+    /// Defaults to `0, 0`.
     pub fn xy(mut self, x: i32, y: i32) -> Self {
         self.x = x;
         self.y = y;
         self
     }
 
+    /// Sets the z-level of the sprite. `0` hides it.
+    /// Defaults to `1`.
     pub fn depth(mut self, depth: u32) -> Self {
         self.depth = depth;
         self
     }
 
+    /// Sets the rotation of the sprite, in degrees.
+    /// Defaults to `0.0`.
     pub fn angle(mut self, angle: f32) -> Self {
         self.angle = angle;
+        self
+    }
+
+    /// Sets whether or not to fill the sprite (only for shapes).
+    /// Defaults to `true`.
+    pub fn fill(mut self, fill: bool) -> Self {
+        self.fill = fill;
+        self
+    }
+
+    /// Sets the weight of the lines if `!fill` (only for shapes).
+    /// Defaults to `4`.
+    pub fn stroke_weight(mut self, stroke_weight: u32) -> Self {
+        self.stroke_weight = stroke_weight;
+        self
+    }
+
+    /// Sets the color of the sprite (for sprites, offsets the color).
+    /// Defaults to opaque white.
+    pub fn color(mut self, color: Color) -> Self {
+        self.color = color;
         self
     }
 }
@@ -197,8 +223,7 @@ pub enum Sprite {
     Text {
         text: String,
         font: FontArc,
-        ch_w: i32,
-        ch_h: i32,
+        font_size: f32,
         ex: SpriteData,
     },
     Texture {
@@ -211,6 +236,7 @@ pub enum Sprite {
     },
 }
 
+// TODO: probably ditch current sprite system
 impl Sprite {
     pub fn rect(w: i32, h: i32, ex: SpriteData) -> Self {
         Self::Rect { w, h, ex }
@@ -224,17 +250,18 @@ impl Sprite {
         Self::Triangle { w, h, ex }
     }
 
-    /// Creates a new text sprite.
-    ///
-    /// *NOTE*: ex.
-    pub fn text<S: ToString>(text: S, data: &'static [u8], ch_w: i32, ch_h: i32, ex: SpriteData) -> Option<Self> {
-        let font = FontArc::try_from_slice(data).ok()?;
-        
+    pub fn text<S: ToString>(
+        text: S,
+        font_data: &'static [u8],
+        font_size: f32,
+        ex: SpriteData,
+    ) -> Option<Self> {
+        let font = FontArc::try_from_slice(font_data).ok()?;
+
         Some(Self::Text {
             text: text.to_string(),
             font,
-            ch_w,
-            ch_h,
+            font_size,
             ex,
         })
     }
@@ -285,7 +312,7 @@ impl Sprite {
         })
     }
 
-    pub fn draw(&self, target: &mut Frame, d: &Display, shaders: &Shaders) {
+    pub(crate) fn draw(&self, target: &mut Frame, d: &Display, shaders: &Shaders) {
         let ex = self.sprite_data();
 
         let mut params = glium::DrawParameters {
@@ -443,50 +470,29 @@ impl Sprite {
             Sprite::Text {
                 text,
                 font,
-                ch_w,
-                ch_h,
+                font_size,
                 ex,
             } => {
-                let mut x = ex.x;
-                let mut y = ex.y;
-                
-                for ch in text.chars() {
-                    // TODO: turn this into a match statement
-                    if ch == '\n' {
-                        x = ex.x;
-                        y += ch_h + 5;
-                        continue;
-                    } else if ch == ' ' {
-                        x += ch_w + 2;
-                        continue;
-                    } else if ch == '\t' {
-                        x += (ch_w + 2) * 4;
-                        continue;
-                    } else if ch == '\r' {
-                        x = ex.x;
-                        continue;
-                    }
+                let (buf, w, h) = text::render_glyphs(font, *font_size, text, ex);
 
-                    let (letter, scale_w, scale_h) =
-                        chtt(ch, font, ex, d).expect("failed to render character");
+                let raw = RawImage2d::from_raw_rgba_reversed(
+                    buf.into_iter()
+                        .flatten()
+                        .flat_map(|(r, g, b, a)| [r, g, b, a])
+                        .collect::<Vec<_>>()
+                        .as_slice(),
+                    (w as u32, h as u32),
+                );
 
-                    let w = gj2gl::coord(*ch_w) / 2.0 * scale_w;
-                    let h = gj2gl::coord(*ch_h) / 2.0 * scale_h;
+                let texture = glium::Texture2d::new(d, raw).unwrap();
 
-                    let vertical_adjust = gj2gl::coord(*ch_h) - h;
-                    let mat = [
-                        [a.cos() * ratio, a.sin(), 0.0, 0.0],
-                        [-a.sin(), a.cos(), 0.0, 0.0],
-                        [0.0, 0.0, (ex.depth as f32) / 256.0, 0.0],
-                        [gj2gl::coord(x), gj2gl::coord(y) - vertical_adjust, 0.0, 1.0],
-                    ];
-
-                    let uniforms = uniform!{
-                        matrix: mat,
-                        tex: letter,
-                    };
-                    
-                    let vertices = [
+                // Scaling down the mesh forces the font size to get bigger,
+                // which results in higher quality textures and less blur.
+                let w = gj2gl::coord(w as i32) * 0.5;
+                let h = gj2gl::coord(h as i32) * 0.5;
+                let vb = VertexBuffer::new(
+                    d,
+                    &[
                         Vertex {
                             position: [-w, h],
                             normal: [0.0, 1.0],
@@ -511,11 +517,13 @@ impl Sprite {
                             tex_coords: [1.0, 0.0],
                             color: color,
                         },
-                    ];
+                    ],
+                )
+                .unwrap();
 
-                    let vb = VertexBuffer::new(d, &vertices).unwrap();
+                let uniforms = uniforms.add("tex", texture);
 
-                    target
+                target
                     .draw(
                         &vb,
                         glium::index::NoIndices(indices),
@@ -523,10 +531,7 @@ impl Sprite {
                         &uniforms,
                         &params,
                     )
-                    .expect("failed to draw character");
-
-                    x += ch_w + 2;
-                }
+                    .expect("failed to draw texture");
             }
             Sprite::Texture {
                 dimensions,
@@ -535,8 +540,8 @@ impl Sprite {
                 data,
                 ..
             } => {
-                let image = glium::texture::RawImage2d::from_raw_rgba_reversed(&data, *dimensions);
-                let texture = glium::Texture2d::new(d, image).unwrap();
+                let raw = glium::texture::RawImage2d::from_raw_rgba_reversed(&data, *dimensions);
+                let texture = glium::Texture2d::new(d, raw).unwrap();
 
                 let w = gj2gl::coord(*w) / 2.0;
                 let h = gj2gl::coord(*h) / 2.0;
