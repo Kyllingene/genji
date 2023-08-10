@@ -11,7 +11,7 @@ use input::Key;
 
 use glium::{glutin, Surface};
 
-// pub mod prelude;
+pub mod prelude;
 
 mod helpers;
 

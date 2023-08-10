@@ -1,4 +1,9 @@
-use std::{f32::consts::PI, fs::File, io::BufReader, path::Path};
+use std::{
+    f32::consts::PI,
+    fs::File,
+    io::{BufReader, Cursor},
+    path::Path,
+};
 
 use crate::helpers::gj2gl;
 
@@ -12,6 +17,8 @@ use glium::{
     implement_vertex, texture::RawImage2d, uniform, Blend, Display, Frame, PolygonMode, Surface,
     VertexBuffer,
 };
+
+pub use image::ImageFormat;
 
 #[derive(Clone, Copy, Debug)]
 struct Vertex {
@@ -268,7 +275,7 @@ impl Sprite {
 
     pub fn texture<S: ToString>(path: S, w: i32, h: i32, ex: SpriteData) -> Option<Self> {
         let path = path.to_string();
-        let image = image::load(
+        let data = image::load(
             BufReader::new(File::open(&path).ok()?),
             image::ImageFormat::from_extension(
                 Path::new(&path)
@@ -279,11 +286,11 @@ impl Sprite {
         .ok()?
         .to_rgba8();
 
-        let dimensions = image.dimensions();
+        let dimensions = data.dimensions();
 
         Some(Self::Texture {
             path,
-            data: image.into_raw(),
+            data: data.into_raw(),
             dimensions,
             w,
             h,
@@ -291,21 +298,38 @@ impl Sprite {
         })
     }
 
-    pub fn texture_from_raw(
-        path: Option<String>,
-        data: Vec<u8>,
+    pub fn texture_from_raw<S, D>(
+        path: Option<S>,
+        data: D,
+        fmt: Option<ImageFormat>,
         w: i32,
         h: i32,
         ex: SpriteData,
-    ) -> Option<Self> {
-        if data.len() % w as usize != 0 {
-            return None;
-        }
+    ) -> Option<Self>
+    where
+        S: ToString,
+        D: Into<Vec<u8>>,
+    {
+        let data = data.into();
+        let path = path.map(|s| s.to_string());
+
+        let data = image::load(
+            Cursor::new(data),
+            fmt.unwrap_or(image::ImageFormat::from_extension(
+                Path::new(path.as_ref()?)
+                    .extension()
+                    .map(|e| e.to_str().unwrap_or(""))?,
+            )?),
+        )
+        .ok()?
+        .to_rgba8();
+
+        let dimensions = data.dimensions();
 
         Some(Self::Texture {
             path: path.unwrap_or_else(String::new),
-            data,
-            dimensions: (w as u32, h as u32),
+            data: data.into_raw(),
+            dimensions,
             w,
             h,
             ex,
@@ -430,7 +454,45 @@ impl Sprite {
                     )
                     .expect("failed to draw rect");
             }
-            Sprite::Circle { .. } => todo!("circles aren't implemented"),
+            Sprite::Circle { r, ex } => {
+                let r = gj2gl::coord(*r);
+                let mut vertices = Vec::new();
+
+                let mut a = 0.0f32;
+                while a <= 360.0 {
+                    let pos = [r * a.cos(), r * a.sin()];
+                    let sum = pos[0] + pos[1];
+                    vertices.push(Vertex {
+                        position: pos,
+                        normal: [pos[0] / sum, pos[1] / sum],
+                        color: ex.color.to_f32(),
+                        tex_coords: [pos[0] + 0.5, pos[1] + 0.5],
+                    });
+
+                    if ex.fill && a % 1.0 == 0.0 {
+                        vertices.push(Vertex {
+                            position: [0.0, 0.0],
+                            normal: [1.0, 0.0],
+                            color: ex.color.to_f32(),
+                            tex_coords: [0.5, 0.5],
+                        });
+                    }
+
+                    a += 0.5;
+                }
+
+                let vb = VertexBuffer::new(d, &vertices).unwrap();
+
+                target
+                    .draw(
+                        &vb,
+                        glium::index::NoIndices(indices),
+                        &shaders.shape,
+                        &uniforms,
+                        &params,
+                    )
+                    .expect("failed to draw rect");
+            }
             Sprite::Triangle { w, h, .. } => {
                 let w = gj2gl::coord(*w) / 2.0;
                 let h = gj2gl::coord(*h) / 2.0;
