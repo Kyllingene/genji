@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 use std::thread;
 use std::time::{Duration, Instant};
 
