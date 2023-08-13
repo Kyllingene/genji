@@ -94,8 +94,12 @@ pub fn main<T: 'static>(
                 }
                 glutin::event::WindowEvent::MouseWheel { delta, .. } => {
                     state_ref.scroll = match delta {
-                        glutin::event::MouseScrollDelta::LineDelta(x, y) => ((x + y) * 40.0).ceil() as i32,
-                        glutin::event::MouseScrollDelta::PixelDelta(s) => gl2gj::pxcoord(s.x + s.y, state_ref.height),
+                        glutin::event::MouseScrollDelta::LineDelta(x, y) => {
+                            ((x + y) * 40.0).ceil() as i32
+                        }
+                        glutin::event::MouseScrollDelta::PixelDelta(s) => {
+                            gl2gj::pxcoord(s.x + s.y, state_ref.height)
+                        }
                     };
                 }
                 glutin::event::WindowEvent::MouseInput { state, button, .. } => {
