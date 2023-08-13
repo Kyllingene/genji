@@ -22,9 +22,9 @@ use helpers::gl2gj;
 /// Runs the engine code for genji. Automatically run
 /// via `genji::init`, so please don't do this manually.
 pub fn main<T: 'static>(
-    init: impl FnOnce() -> (GameState<T>, Sprites) + 'static,
-    onloop: impl Fn(&mut GameState<T>, &mut Sprites) -> bool + 'static,
-    close: impl Fn(GameState<T>, Sprites) + 'static,
+    init: fn() -> (GameState<T>, Sprites),
+    onloop: fn(&mut GameState<T>, &mut Sprites) -> bool,
+    close: fn(GameState<T>, Sprites),
 ) {
     let (state, sprites) = init();
 

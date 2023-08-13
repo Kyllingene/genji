@@ -2,7 +2,7 @@
 
 Genji is a custom game engine written in Rust. It's designed to provide an experience similar to most popular game engines, where your code is run inside a framework that handles the heavy work for you. However, it's technically just a gamedev library that uses some macro magic to give the illusion of an engine.
 
-Currently, it is far from optimized. It also doesn't have a very good sprite system, though it supports several primitives, text, and images. It doesn't yet have any sound support. It's very rough around the edges. Top priority is probably adding mouse support, then sound, then fixing the sprite model.
+Currently, it is far from optimized. It also doesn't have a very good sprite system, though it supports several primitives, text, and images. It's very rough around the edges. Top priority is adding sound, then fixing the sprite model.
 
 ## Assets
 
