@@ -4,8 +4,12 @@ use std::{
     hash::{Hash, Hasher},
 };
 
+use once_cell::sync::Lazy;
+
 use crate::graphics::{Color, Sprite};
 use crate::input::{self, Keys};
+
+pub(crate) static mut SPRITES_CHANGED: Lazy<bool> = Lazy::new(|| true);
 
 /// Hashes any type byte-by-byte.
 ///
@@ -22,6 +26,64 @@ fn hash<T>(data: &T) -> u64 {
     hasher.finish()
 }
 
+#[derive(Debug, Clone)]
+pub struct Sprites(HashMap<u64, Sprite>);
+
+impl Sprites {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    /// Adds a new sprite, then returns the numerical (hashed) id.
+    ///
+    /// Note: String literals must be referenced (i.e. `&"foobar"`).
+    pub fn add<I>(&mut self, id: &I, s: Sprite) -> u64 {
+        let id = hash(id);
+        self.0.insert(id, s);
+        unsafe { *SPRITES_CHANGED = true };
+
+        id
+    }
+
+    /// Gets a reference to a sprite by id.
+    ///
+    /// Note: String literals must be referenced (i.e. `&"foobar"`).
+    pub fn get<I>(&self, id: &I) -> Option<&Sprite> {
+        self.0.get(&hash(id))
+    }
+
+    /// Gets a mutable reference to a sprite by id.
+    ///
+    /// Note: String literals must be referenced (i.e. `&"foobar"`).
+    pub fn get_mut<I>(&mut self, id: &I) -> Option<&mut Sprite> {
+        let s = self.0.get_mut(&hash(id));
+        if s.is_some() {
+            unsafe { *SPRITES_CHANGED = true };
+        }
+
+        s
+    }
+
+    /// Removes a sprite by id, returning the sprite (if it exists).
+    ///
+    /// Note: String literals must be referenced (i.e. `&"foobar"`).
+    pub fn remove<I>(&mut self, id: &I) -> Option<Sprite> {
+        let s = self.0.remove(&hash(id));
+        if s.is_some() {
+            unsafe { *SPRITES_CHANGED = true };
+        }
+
+        s
+    }
+}
+
+impl AsRef<HashMap<u64, Sprite>> for Sprites {
+    fn as_ref(&self) -> &HashMap<u64, Sprite> {
+        &self.0
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct GameState<T> {
     pub title: String,
     pub width: u32,
@@ -30,19 +92,23 @@ pub struct GameState<T> {
     pub clear_color: Option<Color>,
 
     pub state: T,
-    pub sprites: HashMap<u64, Sprite>,
-
+    // pub sprites: HashMap<u64, Sprite>,
     pub keys: Keys,
 
     pub fps: u128,
     pub delta: u128,
 
-    /// Whether or not Genji closes when the OS asks it to.
-    pub close_on_request: bool,
-    /// If `!close_on_request`, if Genji has been asked to close.
-    pub asked_to_close: bool,
+    pub mouse_x: i32,
+    pub mouse_y: i32,
 
-    pub(crate) sprites_changed: bool,
+    /// The change in the scroll wheel this frame.
+    pub scroll: i32,
+
+    /// Whether or not genji closes when the OS asks it to.
+    pub close_on_request: bool,
+    /// When `!close_on_request`, if genji has been asked to close.
+    pub asked_to_close: bool,
+    // pub(crate) sprites_changed: bool,
 }
 
 impl<T> GameState<T> {
@@ -73,61 +139,64 @@ impl<T> GameState<T> {
             clear_color,
 
             state,
-            sprites: HashMap::new(),
-
+            // sprites: HashMap::new(),
             keys: input::keys(),
 
             fps: 1000 / fps,
             delta: 0,
 
+            mouse_x: 0,
+            mouse_y: 0,
+
+            scroll: 0,
+
             close_on_request: false,
             asked_to_close: false,
-
-            sprites_changed: false,
+            // sprites_changed: false,
         }
     }
 
-    /// Adds a new sprite, then returns the numerical (hashed) id.
-    ///
-    /// Note: String literals must be referenced (i.e. `&"foobar"`).
-    pub fn add_sprite<I>(&mut self, id: &I, s: Sprite) -> u64 {
-        let id = hash(id);
-        self.sprites.insert(id, s);
-        self.sprites_changed = true;
+    // /// Adds a new sprite, then returns the numerical (hashed) id.
+    // ///
+    // /// Note: String literals must be referenced (i.e. `&"foobar"`).
+    // pub fn add_sprite<I>(&mut self, id: &I, s: Sprite) -> u64 {
+    //     let id = hash(id);
+    //     self.sprites.insert(id, s);
+    //     self.sprites_changed = true;
 
-        id
-    }
+    //     id
+    // }
 
-    /// Gets a reference to a sprite by id.
-    ///
-    /// Note: String literals must be referenced (i.e. `&"foobar"`).
-    pub fn get_sprite<I>(&self, id: &I) -> Option<&Sprite> {
-        self.sprites.get(&hash(id))
-    }
+    // /// Gets a reference to a sprite by id.
+    // ///
+    // /// Note: String literals must be referenced (i.e. `&"foobar"`).
+    // pub fn get_sprite<I>(&self, id: &I) -> Option<&Sprite> {
+    //     self.sprites.get(&hash(id))
+    // }
 
-    /// Gets a mutable reference to a sprite by id.
-    ///
-    /// Note: String literals must be referenced (i.e. `&"foobar"`).
-    pub fn get_sprite_mut<I>(&mut self, id: &I) -> Option<&mut Sprite> {
-        let s = self.sprites.get_mut(&hash(id));
-        if s.is_some() {
-            self.sprites_changed = true;
-        }
+    // /// Gets a mutable reference to a sprite by id.
+    // ///
+    // /// Note: String literals must be referenced (i.e. `&"foobar"`).
+    // pub fn get_sprite_mut<I>(&mut self, id: &I) -> Option<&mut Sprite> {
+    //     let s = self.sprites.get_mut(&hash(id));
+    //     if s.is_some() {
+    //         self.sprites_changed = true;
+    //     }
 
-        s
-    }
+    //     s
+    // }
 
-    /// Removes a sprite by id, returning the sprite (if it exists).
-    ///
-    /// Note: String literals must be referenced (i.e. `&"foobar"`).
-    pub fn remove_sprite<I>(&mut self, id: &I) -> Option<Sprite> {
-        let s = self.sprites.remove(&hash(id));
-        if s.is_some() {
-            self.sprites_changed = true;
-        }
+    // /// Removes a sprite by id, returning the sprite (if it exists).
+    // ///
+    // /// Note: String literals must be referenced (i.e. `&"foobar"`).
+    // pub fn remove_sprite<I>(&mut self, id: &I) -> Option<Sprite> {
+    //     let s = self.sprites.remove(&hash(id));
+    //     if s.is_some() {
+    //         self.sprites_changed = true;
+    //     }
 
-        s
-    }
+    //     s
+    // }
 }
 
 unsafe impl<T: Send> Send for GameState<T> {}

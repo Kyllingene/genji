@@ -1,14 +1,14 @@
-# Genji Game Engine
+# Genji
 
-Genji is my custom game engine written in Rust. It's designed to provide an experience similar to most game engines, where your code is run inside a framework that handles the heavy work for you. However, it's technically just a library that uses some macro magic to give the illusion of an engine.
+Genji is a custom game engine written in Rust. It's designed to provide an experience similar to most popular game engines, where your code is run inside a framework that handles the heavy work for you. However, it's technically just a gamedev library that uses some macro magic to give the illusion of an engine.
 
 Currently, it is far from optimized. It also doesn't have a very good sprite system, though it supports several primitives, text, and images. It doesn't yet have any sound support. It's very rough around the edges. Top priority is probably adding mouse support, then sound, then fixing the sprite model.
 
 ## Assets
 
-Genji, for images and fonts (the only two assets currently required), supports both loading from bytes and loading from a file. The method I would recommend for small games (the only ones this can really do) is using the provided `use_file!` and `use_files!` macros inside of a module to provide namespaced access to pre-loaded assets.
+For images and fonts (the only two assets currently required), Genji supports both loading from bytes and loading from a file. The method I would recommend for small games (the only ones this can really do) is using the provided `use_file!` and `use_files!` macros inside of a module to provide namespaced access to pre-loaded assets.
 
-Support for bundles is an ideal future, but it may not come to fruition.
+Bundles and spritemaps are parts of an ideal future, but it may not come to fruition.
 
 ## Example usage
 
@@ -24,7 +24,8 @@ type State = GameState<i32>;
 // This function initializes the game. Here is where you
 // should do things like load assets (if you don't utilize
 // `use_file<s>!`), construct levels, etc.
-fn init() -> State {
+fn init() -> (State, Sprites) {
+    let mut sprites = Sprites::new();
     let mut state = State::new(
         // Your custom state (this can be anything, as long as it
         // has a static lifetime; so no non-static references, but
@@ -55,30 +56,25 @@ fn init() -> State {
             .color(Color::new(255, 100, 50, 255))
     );
 
-    state.add_sprite(&"circle", circle);
-    state
+    sprites.add(&"circle", circle);
+    (state, sprites)
 }
 
 // This is where the bulk of your code goes; it is run every frame (unfortunately,
 // genji's logic is not yet framerate-independent).
-fn onloop(state: &mut State) -> bool {
-    // The current system requires you cloning the data you need from the
-    // GameState *before* modifying your sprites; this is being worked on.
-    let width = state.width;
-    let keys = state.keys;
-
+fn onloop(state: &mut State, sprites: &mut Sprites) -> bool {
     // GameState.keys is a wrapper around an array, where each index is a key
     // and each item is a boolean representing whether or not it is pressed.
-    if keys[Key::Esc] {
+    if state.keys[Key::Esc] {
         return true;
     }
 
-    if let Some(circle) = state.get_sprite_mut(&"circle") {
+    if let Some(circle) = sprites.get_mut(&"circle") {
         // This returns a &mut SpriteData.
         let data = circle.sprite_data_mut();
 
         data.x += 3;
-        data.x %= width as i32;
+        data.x %= state.width as i32;
     }
 
     // If you return false, the game will keep running. Returning true from this
@@ -89,7 +85,7 @@ fn onloop(state: &mut State) -> bool {
 }
 
 // This is your destructor. Use this to do things like write save files.
-fn close(_state: State) {}
+fn close(_state: State, _sprites: Sprites) {}
 ```
 
 ## FFI

@@ -1,10 +1,10 @@
-use std::ops::{Index, IndexMut};
+use std::ops::{Add, Index, IndexMut, Sub};
 
 use glium::glutin::event::VirtualKeyCode;
 
 /// A set of keys. Get a keys state with `keys[key]`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Keys([bool; 77]);
+pub struct Keys([bool; 87]);
 
 impl Index<Key> for Keys {
     type Output = bool;
@@ -35,10 +35,10 @@ impl<T: Into<usize>> IndexMut<T> for Keys {
 }
 
 pub fn keys() -> Keys {
-    Keys([false; 77])
+    Keys([false; 87])
 }
 
-/// A key. Corresponds to a number (0-76).
+/// A key. Corresponds to a number (0-86).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(usize)]
 pub enum Key {
@@ -104,8 +104,8 @@ pub enum Key {
     Minus,
     Equals,
     Backslash,
-    LeftBracket,
-    RightBracket,
+    LBracket,
+    RBracket,
     Semicolon,
     Apostrophe,
     Comma,
@@ -124,6 +124,14 @@ pub enum Key {
     F10,
     F11,
     F12,
+
+    LClick,
+    RClick,
+    MClick,
+    M1,
+    M2,
+    M3,
+    M4,
 }
 
 impl Key {
@@ -187,8 +195,8 @@ impl Key {
             12 => Key::Minus,
             13 => Key::Equals,
             43 => Key::Backslash,
-            26 => Key::LeftBracket,
-            27 => Key::RightBracket,
+            26 => Key::LBracket,
+            27 => Key::RBracket,
             39 => Key::Semicolon,
             40 => Key::Apostrophe,
             51 => Key::Comma,
@@ -294,7 +302,7 @@ impl Key {
             VirtualKeyCode::Equals => vec![Key::Equals],
             VirtualKeyCode::Grave => vec![Key::Backtick],
             VirtualKeyCode::LAlt => vec![Key::Alt],
-            VirtualKeyCode::LBracket => vec![Key::LeftBracket],
+            VirtualKeyCode::LBracket => vec![Key::LBracket],
             VirtualKeyCode::LControl => vec![Key::Ctrl],
             VirtualKeyCode::LShift => vec![Key::Shift],
             VirtualKeyCode::LWin => vec![Key::Super],
@@ -302,7 +310,7 @@ impl Key {
             VirtualKeyCode::Period => vec![Key::Period],
             VirtualKeyCode::Plus => vec![Key::Shift, Key::Equals],
             VirtualKeyCode::RAlt => vec![Key::RAlt],
-            VirtualKeyCode::RBracket => vec![Key::RightBracket],
+            VirtualKeyCode::RBracket => vec![Key::RBracket],
             VirtualKeyCode::RControl => vec![Key::RCtrl],
             VirtualKeyCode::RShift => vec![Key::RShift],
             VirtualKeyCode::RWin => vec![Key::RSuper],
@@ -315,5 +323,30 @@ impl Key {
             VirtualKeyCode::Cut => vec![Key::Shift, Key::X],
             _ => return None,
         })
+    }
+}
+
+impl<T> From<T> for Key
+where
+    usize: From<T>,
+{
+    fn from(value: T) -> Self {
+        usize::from(value).into()
+    }
+}
+
+impl<T: Into<Key>> Add<T> for Key {
+    type Output = Self;
+
+    fn add(self, rhs: T) -> Self::Output {
+        (self as usize + rhs.into() as usize).into()
+    }
+}
+
+impl<T: Into<Key>> Sub<T> for Key {
+    type Output = Self;
+
+    fn sub(self, rhs: T) -> Self::Output {
+        (self as usize - rhs.into() as usize).into()
     }
 }

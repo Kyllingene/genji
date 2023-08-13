@@ -4,17 +4,20 @@ use std::collections::HashMap;
 
 use crate::graphics::Sprite;
 
-/// Conversions from genji units to OpenGL units.
+/// Conversions from genji units to glutin/glium units.
 pub mod gj2gl {
     /// Converts a genji coordinate (-400 - 400) to an OpenGL coordinate (-1.0 - 1.0).
     pub fn coord(x: i32) -> f32 {
         // (x as f32 - 500.0) / 1000.0
         x as f32 / 200.0
     }
+}
 
-    /// Converts genji coordinates (-400 - 400) to OpenGL coordinates (-1.0 - 1.0).
-    pub fn coords(x: i32, y: i32) -> [f32; 2] {
-        [coord(x), coord(y)]
+/// Conversions from glutin/glium units to genji units.
+pub mod gl2gj {
+    /// Converts a pixel coordinate to a genji coordinate.
+    pub fn pxcoord(x: f64, dim: u32) -> i32 {
+        ((x / dim as f64 - 0.5 * x.signum()) * 400.0).ceil() as i32
     }
 }
 
