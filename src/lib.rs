@@ -8,13 +8,13 @@ pub use genji_macros::init;
 pub mod graphics;
 pub mod input;
 pub mod state;
+pub mod prelude;
 
 use input::Key;
 
 use glium::{glutin, Surface};
 use state::{GameState, Sprites, SPRITES_CHANGED};
 
-pub mod prelude;
 
 mod helpers;
 use helpers::gl2gj;
