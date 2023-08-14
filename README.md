@@ -4,6 +4,15 @@ Genji is a custom game engine written in Rust. It's designed to provide an exper
 
 Currently, it is far from optimized. It also doesn't have a very good sprite system, though it supports several primitives, text, and images. It's very rough around the edges. Top priority is adding sound, then fixing the sprite model.
 
+## Building
+
+Since games can be performance-sensitive, it's often important to have optimizations, even in dev builds. However, building in release mode will cause your compile times to drastically increase, harming the development cycle. A good compromise is to build your dependencies (including Genji) optimized, since they won't be re-compiled every time, while leaving your actual game code unoptimized. This can be achieved by putting this into your `Cargo.toml`:
+
+```toml
+[profile.dev.package."*"]
+opt-level = 3
+```
+
 ## Assets
 
 For images and fonts (the only two assets currently required), Genji supports both loading from bytes and loading from a file. The method I would recommend for small games (the only ones this can really do) is using the provided `use_file!` and `use_files!` macros inside of a module to provide namespaced access to pre-loaded assets.

@@ -1,11 +1,11 @@
 #![allow(dead_code)]
 
-use std::collections::HashMap;
+use std::{collections::{HashMap, hash_map::DefaultHasher}, hash::{Hash, Hasher}};
 
 use crate::graphics::Sprite;
 
 /// Conversions from genji units to glutin/glium units.
-pub mod gj2gl {
+pub(crate) mod gj2gl {
     /// Converts a genji coordinate (-400 - 400) to an OpenGL coordinate (-1.0 - 1.0).
     pub fn coord(x: i32) -> f32 {
         // (x as f32 - 500.0) / 1000.0
@@ -14,7 +14,7 @@ pub mod gj2gl {
 }
 
 /// Conversions from glutin/glium units to genji units.
-pub mod gl2gj {
+pub(crate) mod gl2gj {
     /// Converts a pixel coordinate to a genji coordinate.
     pub fn pxcoord(x: f64, dim: u32) -> i32 {
         ((x / dim as f64 - 0.5 * x.signum()) * 400.0).ceil() as i32
@@ -23,7 +23,7 @@ pub mod gl2gj {
 
 /// Helpers for creating and handling matrices.
 /// Currently unused.
-pub mod matrix {
+pub(crate) mod matrix {
     use std::f32::consts::PI;
 
     /// Create a perspective matrix from screen dimensions.
@@ -90,7 +90,7 @@ pub mod matrix {
 }
 
 /// Sorts by depth, removing depth-0 (hidden) sprites. Discards id's.
-pub fn sprite_filter<T>(sprites: HashMap<T, Sprite>) -> Vec<Sprite> {
+pub(crate) fn sprite_filter<T>(sprites: HashMap<T, Sprite>) -> Vec<Sprite> {
     let mut sprites: Vec<Sprite> = sprites
         .into_iter()
         .filter_map(|(_, s)| {
@@ -105,4 +105,19 @@ pub fn sprite_filter<T>(sprites: HashMap<T, Sprite>) -> Vec<Sprite> {
     sprites.sort_by(|s1, s2| s2.sprite_data().depth.cmp(&s1.sprite_data().depth));
 
     sprites
+}
+
+/// Hashes any type byte-by-byte.
+///
+/// The &str "abc" and the &[u8] [61, 62, 63] result in the same hash.
+pub(crate) fn hash<T>(data: &T) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    let bytes: &[u8] = unsafe {
+        core::slice::from_raw_parts((data as *const T) as *const u8, ::core::mem::size_of::<T>())
+    };
+    for byte in bytes {
+        byte.hash(&mut hasher);
+    }
+
+    hasher.finish()
 }

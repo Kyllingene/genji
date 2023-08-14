@@ -1,30 +1,13 @@
 use std::collections::HashMap;
-use std::{
-    collections::hash_map::DefaultHasher,
-    hash::{Hash, Hasher},
-};
 
 use once_cell::sync::Lazy;
 
 use crate::graphics::{Color, Sprite};
 use crate::input::{self, Keys};
+use crate::helpers::hash;
 
+// TODO: does this even need to be thread-safe? if no, remove once_cell dep
 pub(crate) static mut SPRITES_CHANGED: Lazy<bool> = Lazy::new(|| true);
-
-/// Hashes any type byte-by-byte.
-///
-/// The &str "abc" and the &[u8] [61, 62, 63] result in the same hash.
-fn hash<T>(data: &T) -> u64 {
-    let mut hasher = DefaultHasher::new();
-    let bytes: &[u8] = unsafe {
-        core::slice::from_raw_parts((data as *const T) as *const u8, ::core::mem::size_of::<T>())
-    };
-    for byte in bytes {
-        byte.hash(&mut hasher);
-    }
-
-    hasher.finish()
-}
 
 #[derive(Debug, Clone)]
 pub struct Sprites(HashMap<u64, Sprite>);
