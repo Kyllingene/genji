@@ -382,7 +382,7 @@ pub mod sprite {
         })
     }
 
-    pub fn text_font_file<S1: ToString, S2: ToString>(
+    pub fn text_font_from_file<S1: ToString, S2: ToString>(
         text: S1,
         font: S2,
         font_size: f32,
@@ -400,31 +400,7 @@ pub mod sprite {
         })
     }
 
-    pub fn texture<S: ToString>(path: S, w: i32, h: i32) -> Option<Texture> {
-        let path = path.to_string();
-        let data = image::load(
-            BufReader::new(File::open(&path).ok()?),
-            image::ImageFormat::from_extension(
-                Path::new(&path)
-                    .extension()
-                    .map(|e| e.to_str().unwrap_or(""))?,
-            )?,
-        )
-        .ok()?
-        .to_rgba8();
-
-        let dimensions = data.dimensions();
-
-        Some(Texture {
-            path,
-            data: data.into_raw(),
-            dimensions,
-            w,
-            h,
-        })
-    }
-
-    pub fn texture_from_raw<S, D>(
+    pub fn texture<S, D>(
         path: Option<S>,
         data: D,
         fmt: Option<ImageFormat>,
@@ -453,6 +429,30 @@ pub mod sprite {
 
         Some(Texture {
             path: path.unwrap_or_default(),
+            data: data.into_raw(),
+            dimensions,
+            w,
+            h,
+        })
+    }
+
+    pub fn texture_from_file<S: ToString>(path: S, w: i32, h: i32) -> Option<Texture> {
+        let path = path.to_string();
+        let data = image::load(
+            BufReader::new(File::open(&path).ok()?),
+            image::ImageFormat::from_extension(
+                Path::new(&path)
+                    .extension()
+                    .map(|e| e.to_str().unwrap_or(""))?,
+            )?,
+        )
+        .ok()?
+        .to_rgba8();
+
+        let dimensions = data.dimensions();
+
+        Some(Texture {
+            path,
             data: data.into_raw(),
             dimensions,
             w,
