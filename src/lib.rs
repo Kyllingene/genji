@@ -72,9 +72,9 @@ pub fn main<T: 'static>(
                         control_flow.set_exit();
                         close(state.take().unwrap(), world.take().unwrap());
                         closed = true;
-                    } else {
-                        state.as_mut().unwrap().asked_to_close = true;
                     }
+
+                    state.as_mut().unwrap().asked_to_close = true;
                 }
                 glutin::event::WindowEvent::ModifiersChanged(modifiers) => {
                     state_ref.keys[Key::Alt] = modifiers.alt();
