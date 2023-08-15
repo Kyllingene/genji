@@ -1,8 +1,11 @@
 #![allow(dead_code)]
 
-use std::{collections::{HashMap, hash_map::DefaultHasher}, hash::{Hash, Hasher}};
+use std::{
+    collections::hash_map::DefaultHasher,
+    hash::{Hash, Hasher},
+};
 
-use crate::graphics::Sprite;
+// use crate::graphics::Sprite;
 
 /// Conversions from genji units to glutin/glium units.
 pub(crate) mod gj2gl {
@@ -89,27 +92,28 @@ pub(crate) mod matrix {
     }
 }
 
-/// Sorts by depth, removing depth-0 (hidden) sprites. Discards id's.
-pub(crate) fn sprite_filter<T>(sprites: HashMap<T, Sprite>) -> Vec<Sprite> {
-    let mut sprites: Vec<Sprite> = sprites
-        .into_iter()
-        .filter_map(|(_, s)| {
-            if s.sprite_data().depth == 0 {
-                None
-            } else {
-                Some(s)
-            }
-        })
-        .collect();
+// /// Sorts by depth, removing depth-0 (hidden) sprites. Discards id's.
+// pub(crate) fn sprite_filter<T>(sprites: HashMap<T, Sprite>) -> Vec<Sprite> {
+//     let mut sprites: Vec<Sprite> = sprites
+//         .into_iter()
+//         .filter_map(|(_, s)| {
+//             if s.sprite_data().depth == 0 {
+//                 None
+//             } else {
+//                 Some(s)
+//             }
+//         })
+//         .collect();
 
-    sprites.sort_by(|s1, s2| s2.sprite_data().depth.cmp(&s1.sprite_data().depth));
+//     sprites.sort_by(|s1, s2| s2.sprite_data().depth.cmp(&s1.sprite_data().depth));
 
-    sprites
-}
+//     sprites
+// }
 
 /// Hashes any type byte-by-byte.
 ///
 /// The &str "abc" and the &[u8] [61, 62, 63] result in the same hash.
+/// Currently unused.
 pub(crate) fn hash<T>(data: &T) -> u64 {
     let mut hasher = DefaultHasher::new();
     let bytes: &[u8] = unsafe {

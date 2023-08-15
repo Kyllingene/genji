@@ -33,8 +33,9 @@ macro_rules! use_files {
 }
 
 pub use crate::{
-    graphics::{Color, Sprite, SpriteData},
+    ecs::World,
+    graphics::{sprite, Angle, Color, Depth, Fill, Position, StrokeWeight},
     input::Key,
-    state::{GameState, Sprites},
+    state::GameState,
     use_file, use_files,
 };

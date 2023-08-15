@@ -1,70 +1,11 @@
-use std::collections::HashMap;
+// use std::collections::HashMap;
 
-use once_cell::sync::Lazy;
+// use once_cell::sync::Lazy;
 
-use crate::graphics::{Color, Sprite};
+// use crate::graphics::{Color, Sprite};
+use crate::graphics::Color;
 use crate::input::{self, Keys};
-use crate::helpers::hash;
-
-// TODO: does this even need to be thread-safe? if no, remove once_cell dep
-pub(crate) static mut SPRITES_CHANGED: Lazy<bool> = Lazy::new(|| true);
-
-#[derive(Debug, Clone)]
-pub struct Sprites(HashMap<u64, Sprite>);
-
-impl Sprites {
-    pub fn new() -> Self {
-        Self(HashMap::new())
-    }
-
-    /// Adds a new sprite, then returns the numerical (hashed) id.
-    ///
-    /// Note: String literals must be referenced (i.e. `&"foobar"`).
-    pub fn add<I>(&mut self, id: &I, s: Sprite) -> u64 {
-        let id = hash(id);
-        self.0.insert(id, s);
-        unsafe { *SPRITES_CHANGED = true };
-
-        id
-    }
-
-    /// Gets a reference to a sprite by id.
-    ///
-    /// Note: String literals must be referenced (i.e. `&"foobar"`).
-    pub fn get<I>(&self, id: &I) -> Option<&Sprite> {
-        self.0.get(&hash(id))
-    }
-
-    /// Gets a mutable reference to a sprite by id.
-    ///
-    /// Note: String literals must be referenced (i.e. `&"foobar"`).
-    pub fn get_mut<I>(&mut self, id: &I) -> Option<&mut Sprite> {
-        let s = self.0.get_mut(&hash(id));
-        if s.is_some() {
-            unsafe { *SPRITES_CHANGED = true };
-        }
-
-        s
-    }
-
-    /// Removes a sprite by id, returning the sprite (if it exists).
-    ///
-    /// Note: String literals must be referenced (i.e. `&"foobar"`).
-    pub fn remove<I>(&mut self, id: &I) -> Option<Sprite> {
-        let s = self.0.remove(&hash(id));
-        if s.is_some() {
-            unsafe { *SPRITES_CHANGED = true };
-        }
-
-        s
-    }
-}
-
-impl AsRef<HashMap<u64, Sprite>> for Sprites {
-    fn as_ref(&self) -> &HashMap<u64, Sprite> {
-        &self.0
-    }
-}
+// use crate::helpers::hash;
 
 #[derive(Debug, Clone)]
 pub struct GameState<T> {

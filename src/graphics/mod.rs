@@ -1,34 +1,11 @@
-use std::{
-    f32::consts::PI,
-    fs::File,
-    io::{BufReader, Cursor, Read},
-    path::Path,
-};
+use std::ops::{Deref, DerefMut};
 
-use crate::helpers::gj2gl;
-
-mod text;
+use glium::{Frame, Display};
 
 pub(crate) mod shaders;
-use ab_glyph::FontArc;
 use shaders::Shaders;
 
-use glium::{
-    implement_vertex, texture::RawImage2d, uniform, Blend, Display, Frame, PolygonMode, Surface,
-    VertexBuffer,
-};
-
-pub use image::ImageFormat;
-
-#[derive(Clone, Copy, Debug)]
-struct Vertex {
-    position: [f32; 2],
-    normal: [f32; 2],
-    color: [f32; 4],
-    tex_coords: [f32; 2],
-}
-
-implement_vertex!(Vertex, position, normal, color, tex_coords);
+mod text;
 
 /// An RGBA color in byte format.
 #[derive(Debug, Clone, Copy)]
@@ -107,9 +84,113 @@ impl Default for Color {
     }
 }
 
-/// The data underlying every sprite.
+/// A position to apply to a sprite.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Position(pub i32, pub i32);
+
+/// A sprites depth. `0` hides the sprite.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Depth(pub u32);
+
+impl Deref for Depth {
+    type Target = u32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Depth {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+/// The angle of a sprite.
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct Angle(pub f32);
+
+impl Deref for Angle {
+    type Target = f32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Angle {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+/// Whether or not to fill the sprite.
+/// Doesn't apply to textures or text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Fill(pub bool);
+
+impl Deref for Fill {
+    type Target = bool;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Fill {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+/// The weight of the lines if `!fill` (only for shapes).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct StrokeWeight(pub u32);
+
+impl Deref for StrokeWeight {
+    type Target = u32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for StrokeWeight {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+/// Used to sort each sprite.
+pub(crate) enum Sprite<'a> {
+    Rect(&'a sprite::Rect),
+    Circle(&'a sprite::Circle),
+    Triangle(&'a sprite::Triangle),
+    Text(&'a sprite::Text),
+    Texture(&'a sprite::Texture),
+}
+
+impl<'a> Sprite<'a> {
+    pub(crate) fn draw(
+        &self,
+        target: &mut Frame,
+        ex: SpriteData,
+        d: &Display,
+        shaders: &Shaders,
+    ) {
+        match self {
+            Self::Rect(sprite) => sprite.draw(target, ex, d, shaders),
+            Self::Circle(sprite) => sprite.draw(target, ex, d, shaders),
+            Self::Triangle(sprite) => sprite.draw(target, ex, d, shaders),
+            Self::Text(sprite) => sprite.draw(target, ex, d, shaders),
+            Self::Texture(sprite) => sprite.draw(target, ex, d, shaders),
+        }
+    }
+}
+
+/// The data required to draw a sprite.
 #[derive(Debug, Clone, Copy)]
-pub struct SpriteData {
+pub(crate) struct SpriteData {
     /// The horizontal position of the sprite.
     /// Defaults to `0`.
     pub x: i32,
@@ -141,62 +222,56 @@ impl SpriteData {
         Self::default()
     }
 
-    /// Sets the horizontal position of the sprite.
-    /// Defaults to `0`.
-    pub fn x(mut self, x: i32) -> Self {
-        self.x = x;
-        self
-    }
+    //     /// Sets the horizontal position of the sprite.
+    //     /// Defaults to `0`.
+    //     pub fn x(mut self, x: i32) -> Self {
+    //         self.x = x;
+    //         self
+    //     }
 
-    /// Sets the vertical position of the sprite.
-    /// Defaults to `0`.
-    pub fn y(mut self, y: i32) -> Self {
-        self.y = y;
-        self
-    }
+    //     /// Sets the vertical position of the sprite.
+    //     /// Defaults to `0`.
+    //     pub fn y(mut self, y: i32) -> Self {
+    //         self.y = y;
+    //         self
+    //     }
 
-    /// Sets the position of the sprite.
-    /// Defaults to `0, 0`.
-    pub fn xy(mut self, x: i32, y: i32) -> Self {
-        self.x = x;
-        self.y = y;
-        self
-    }
+    //     /// Sets the position of the sprite.
+    //     /// Defaults to `0, 0`.
+    //     pub fn xy(mut self, x: i32, y: i32) -> Self {
+    //         self.x = x;
+    //         self.y = y;
+    //         self
+    //     }
 
-    /// Sets the z-level of the sprite. `0` hides it.
-    /// Defaults to `1`.
-    pub fn depth(mut self, depth: u32) -> Self {
-        self.depth = depth;
-        self
-    }
+    //     /// Sets the z-level of the sprite. `0` hides it.
+    //     /// Defaults to `1`.
+    //     pub fn depth(mut self, depth: u32) -> Self {
+    //         self.depth = depth;
+    //         self
+    //     }
 
-    /// Sets the rotation of the sprite, in degrees.
-    /// Defaults to `0.0`.
-    pub fn angle(mut self, angle: f32) -> Self {
-        self.angle = angle;
-        self
-    }
+    //     /// Sets the rotation of the sprite, in degrees.
+    //     /// Defaults to `0.0`.
+    //     pub fn angle(mut self, angle: f32) -> Self {
+    //         self.angle = angle;
+    //         self
+    //     }
 
-    /// Sets whether or not to fill the sprite (only for shapes).
-    /// Defaults to `true`.
-    pub fn fill(mut self, fill: bool) -> Self {
-        self.fill = fill;
-        self
-    }
+    //     /// Sets whether or not to fill the sprite (only for shapes).
+    //     /// Defaults to `true`.
+    //     pub fn fill(mut self, fill: bool) -> Self {
+    //         self.fill = fill;
+    //         self
+    //     }
 
-    /// Sets the weight of the lines if `!fill` (only for shapes).
-    /// Defaults to `4`.
-    pub fn stroke_weight(mut self, stroke_weight: u32) -> Self {
-        self.stroke_weight = stroke_weight;
-        self
-    }
-
-    /// Sets the color of the sprite (for sprites, offsets the color).
-    /// Defaults to opaque white.
-    pub fn color(mut self, color: Color) -> Self {
-        self.color = color;
-        self
-    }
+    //     /// Sets the weight of the lines if `!fill` (only for shapes).
+    //     /// Defaults to `4`.
+    //     pub fn stroke_weight(mut self, stroke_weight: u32) -> Self {
+    //         self.stroke_weight = stroke_weight;
+    //         self
+    //     }
+    //     }
 }
 
 impl Default for SpriteData {
@@ -213,65 +288,97 @@ impl Default for SpriteData {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum Sprite {
-    Rect {
-        w: i32,
-        h: i32,
-        ex: SpriteData,
-    },
-    Circle {
-        r: i32,
-        ex: SpriteData,
-    },
-    Triangle {
-        w: i32,
-        h: i32,
-        ex: SpriteData,
-    },
-    Text {
-        text: String,
-        font: FontArc,
-        font_size: f32,
-        ex: SpriteData,
-    },
-    Texture {
-        path: String,
-        data: Vec<u8>,
-        dimensions: (u32, u32),
-        w: i32,
-        h: i32,
-        ex: SpriteData,
-    },
-}
+pub mod sprite {
+    use std::{
+        f32::consts::PI,
+        fmt::Debug,
+        fs::File,
+        io::{BufReader, Cursor, Read},
+        path::Path,
+    };
 
-// TODO: probably ditch current sprite system
-impl Sprite {
-    pub fn rect(w: i32, h: i32, ex: SpriteData) -> Self {
-        Self::Rect { w, h, ex }
+    use super::text;
+    use super::{shaders, SpriteData};
+    use crate::helpers::gj2gl;
+
+    use ab_glyph::FontArc;
+    use shaders::Shaders;
+
+    use glium::{
+        implement_vertex, texture::RawImage2d, uniform, Blend, Display, Frame, PolygonMode,
+        Surface, VertexBuffer,
+    };
+
+    pub use image::ImageFormat;
+
+    #[derive(Clone, Copy, Debug)]
+    struct Vertex {
+        position: [f32; 2],
+        normal: [f32; 2],
+        color: [f32; 4],
+        tex_coords: [f32; 2],
     }
 
-    pub fn circle(r: i32, ex: SpriteData) -> Self {
-        Self::Circle { r, ex }
+    implement_vertex!(Vertex, position, normal, color, tex_coords);
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct Rect {
+        pub w: i32,
+        pub h: i32,
+        // ex: SpriteData,
     }
 
-    pub fn triangle(w: i32, h: i32, ex: SpriteData) -> Self {
-        Self::Triangle { w, h, ex }
+    #[derive(Debug, Clone, Copy)]
+    pub struct Circle {
+        pub r: i32,
+        // ex: SpriteData,
     }
 
-    pub fn text<S: ToString>(
-        text: S,
-        font_data: &'static [u8],
-        font_size: f32,
-        ex: SpriteData,
-    ) -> Option<Self> {
+    #[derive(Debug, Clone, Copy)]
+    pub struct Triangle {
+        pub w: i32,
+        pub h: i32,
+        // ex: SpriteData,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct Text {
+        pub text: String,
+        pub font: FontArc,
+        pub font_size: f32,
+        // ex: SpriteData,
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct Texture {
+        pub path: String,
+        pub data: Vec<u8>,
+        pub dimensions: (u32, u32),
+        pub w: i32,
+        pub h: i32,
+        // ex: SpriteData,
+    }
+    // }
+
+    pub fn rect(w: i32, h: i32) -> Rect {
+        Rect { w, h }
+    }
+
+    pub fn circle(r: i32) -> Circle {
+        Circle { r }
+    }
+
+    pub fn triangle(w: i32, h: i32) -> Triangle {
+        Triangle { w, h }
+    }
+
+    pub fn text<S: ToString>(text: S, font_data: &'static [u8], font_size: f32) -> Option<Text> {
         let font = FontArc::try_from_slice(font_data).ok()?;
 
-        Some(Self::Text {
+        Some(Text {
             text: text.to_string(),
             font,
             font_size,
-            ex,
         })
     }
 
@@ -279,23 +386,21 @@ impl Sprite {
         text: S1,
         font: S2,
         font_size: f32,
-        ex: SpriteData,
-    ) -> Option<Self> {
+    ) -> Option<Text> {
         let mut font_file = File::open(font.to_string()).ok()?;
         let mut font_data = Vec::new();
         font_file.read_to_end(&mut font_data).ok()?;
 
         let font = FontArc::try_from_vec(font_data).ok()?;
 
-        Some(Self::Text {
+        Some(Text {
             text: text.to_string(),
             font,
             font_size,
-            ex,
         })
     }
 
-    pub fn texture<S: ToString>(path: S, w: i32, h: i32, ex: SpriteData) -> Option<Self> {
+    pub fn texture<S: ToString>(path: S, w: i32, h: i32) -> Option<Texture> {
         let path = path.to_string();
         let data = image::load(
             BufReader::new(File::open(&path).ok()?),
@@ -310,13 +415,12 @@ impl Sprite {
 
         let dimensions = data.dimensions();
 
-        Some(Self::Texture {
+        Some(Texture {
             path,
             data: data.into_raw(),
             dimensions,
             w,
             h,
-            ex,
         })
     }
 
@@ -326,8 +430,7 @@ impl Sprite {
         fmt: Option<ImageFormat>,
         w: i32,
         h: i32,
-        ex: SpriteData,
-    ) -> Option<Self>
+    ) -> Option<Texture>
     where
         S: ToString,
         D: Into<Vec<u8>>,
@@ -348,388 +451,494 @@ impl Sprite {
 
         let dimensions = data.dimensions();
 
-        Some(Self::Texture {
+        Some(Texture {
             path: path.unwrap_or_default(),
             data: data.into_raw(),
             dimensions,
             w,
             h,
-            ex,
         })
     }
 
-    pub(crate) fn draw(&self, target: &mut Frame, d: &Display, shaders: &Shaders) {
-        let ex = self.sprite_data();
+    impl Rect {
+        pub(crate) fn draw(
+            &self,
+            target: &mut Frame,
+            ex: SpriteData,
+            d: &Display,
+            shaders: &Shaders,
+        ) {
+            let mut params = glium::DrawParameters {
+                blend: Blend::alpha_blending(),
+                ..Default::default()
+            };
 
-        let mut params = glium::DrawParameters {
-            // depth: glium::Depth {
-            //     test: glium::draw_parameters::DepthTest::IfLess,
-            //     write: true,
-            //     ..Default::default()
-            // },
-            blend: Blend::alpha_blending(),
-            ..Default::default()
-        };
+            let color = ex.color.to_f32();
 
-        let color = ex.color.to_f32();
+            let indices = if ex.fill {
+                glium::index::PrimitiveType::TriangleStrip
+            } else {
+                params.polygon_mode = PolygonMode::Line;
+                params.line_width = Some(gj2gl::coord(ex.stroke_weight as i32 + 500));
+                glium::index::PrimitiveType::LineStrip
+            };
 
-        let indices = if ex.fill {
-            glium::index::PrimitiveType::TriangleStrip
-        } else {
-            params.polygon_mode = PolygonMode::Line;
-            params.line_width = Some(gj2gl::coord(ex.stroke_weight as i32 + 500));
-            glium::index::PrimitiveType::LineStrip
-        };
+            let (s_width, s_height) = target.get_dimensions();
+            let ratio = s_height as f32 / s_width as f32;
+            let a = -ex.angle * (PI / 180.0);
+            let mat = [
+                [a.cos() * ratio, a.sin(), 0.0, 0.0],
+                [-a.sin(), a.cos(), 0.0, 0.0],
+                [0.0, 0.0, (ex.depth as f32) / 256.0, 0.0],
+                [gj2gl::coord(ex.x), gj2gl::coord(ex.y), 0.0, 1.0],
+            ];
 
-        let (s_width, s_height) = target.get_dimensions();
-        let ratio = s_height as f32 / s_width as f32;
-        let a = -ex.angle * (PI / 180.0);
-        let mat = [
-            [a.cos() * ratio, a.sin(), 0.0, 0.0],
-            [-a.sin(), a.cos(), 0.0, 0.0],
-            [0.0, 0.0, (ex.depth as f32) / 256.0, 0.0],
-            [gj2gl::coord(ex.x), gj2gl::coord(ex.y), 0.0, 1.0],
-        ];
+            let uniforms = uniform! {
+                matrix: mat,
+            };
 
-        let uniforms = uniform! {
-            matrix: mat,
-        };
+            let w = gj2gl::coord(self.w) / 2.0;
+            let h = gj2gl::coord(self.h) / 2.0;
 
-        match self {
-            Sprite::Rect { w, h, .. } => {
-                let w = gj2gl::coord(*w) / 2.0;
-                let h = gj2gl::coord(*h) / 2.0;
-
-                let vb = if ex.fill {
-                    let vertices = [
-                        Vertex {
-                            position: [-w, h],
-                            normal: [0.0, 1.0],
-                            tex_coords: [0.0, 1.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [w, h],
-                            normal: [1.0, 1.0],
-                            tex_coords: [1.0, 1.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [-w, -h],
-                            normal: [0.0, 0.0],
-                            tex_coords: [0.0, 0.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [w, -h],
-                            normal: [1.0, 0.0],
-                            tex_coords: [1.0, 0.0],
-                            color,
-                        },
-                    ];
-
-                    VertexBuffer::new(d, &vertices).unwrap()
-                } else {
-                    let vertices = [
-                        Vertex {
-                            position: [-w, h],
-                            normal: [0.0, 1.0],
-                            tex_coords: [0.0, 1.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [w, h],
-                            normal: [1.0, 1.0],
-                            tex_coords: [1.0, 1.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [w, -h],
-                            normal: [1.0, 0.0],
-                            tex_coords: [1.0, 0.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [-w, -h],
-                            normal: [0.0, 0.0],
-                            tex_coords: [0.0, 0.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [-w, h],
-                            normal: [0.0, 1.0],
-                            tex_coords: [0.0, 1.0],
-                            color,
-                        },
-                    ];
-
-                    VertexBuffer::new(d, &vertices).unwrap()
-                };
-
-                target
-                    .draw(
-                        &vb,
-                        glium::index::NoIndices(indices),
-                        &shaders.shape,
-                        &uniforms,
-                        &params,
-                    )
-                    .expect("failed to draw rect");
-            }
-            Sprite::Circle { r, ex } => {
-                let r = gj2gl::coord(*r);
-                let mut vertices = Vec::new();
-
-                let mut a = 0.0f32;
-                while a <= 360.0 {
-                    let pos = [r * a.cos(), r * a.sin()];
-                    let sum = pos[0] + pos[1];
-                    vertices.push(Vertex {
-                        position: pos,
-                        normal: [pos[0] / sum, pos[1] / sum],
-                        color: ex.color.to_f32(),
-                        tex_coords: [pos[0] + 0.5, pos[1] + 0.5],
-                    });
-
-                    if ex.fill && a % 1.0 == 0.0 {
-                        vertices.push(Vertex {
-                            position: [0.0, 0.0],
-                            normal: [1.0, 0.0],
-                            color: ex.color.to_f32(),
-                            tex_coords: [0.5, 0.5],
-                        });
-                    }
-
-                    a += 0.5;
-                }
-
-                let vb = VertexBuffer::new(d, &vertices).unwrap();
-
-                target
-                    .draw(
-                        &vb,
-                        glium::index::NoIndices(indices),
-                        &shaders.shape,
-                        &uniforms,
-                        &params,
-                    )
-                    .expect("failed to draw rect");
-            }
-            Sprite::Triangle { w, h, .. } => {
-                let w = gj2gl::coord(*w) / 2.0;
-                let h = gj2gl::coord(*h) / 2.0;
-
+            let vb = if ex.fill {
                 let vertices = [
                     Vertex {
-                        position: [-w, -h],
-                        normal: [-w, -h],
+                        position: [-w, h],
+                        normal: [0.0, 1.0],
+                        tex_coords: [0.0, 1.0],
                         color,
+                    },
+                    Vertex {
+                        position: [w, h],
+                        normal: [1.0, 1.0],
+                        tex_coords: [1.0, 1.0],
+                        color,
+                    },
+                    Vertex {
+                        position: [-w, -h],
+                        normal: [0.0, 0.0],
                         tex_coords: [0.0, 0.0],
+                        color,
                     },
                     Vertex {
                         position: [w, -h],
-                        normal: [w, -h],
-                        color,
+                        normal: [1.0, 0.0],
                         tex_coords: [1.0, 0.0],
-                    },
-                    Vertex {
-                        position: [0.0, h],
-                        normal: [0.0, h],
                         color,
-                        tex_coords: [0.5, 1.0],
                     },
                 ];
 
-                let vb = VertexBuffer::new(d, &vertices).unwrap();
-                target
-                    .draw(
-                        &vb,
-                        glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
-                        &shaders.shape,
-                        &uniforms,
-                        &params,
-                    )
-                    .expect("failed to draw triangle");
-            }
-            Sprite::Text {
-                text,
-                font,
-                font_size,
-                ex,
-            } => {
-                let (buf, w, h) = text::render_glyphs(font, *font_size, text, ex);
+                VertexBuffer::new(d, &vertices).unwrap()
+            } else {
+                let vertices = [
+                    Vertex {
+                        position: [-w, h],
+                        normal: [0.0, 1.0],
+                        tex_coords: [0.0, 1.0],
+                        color,
+                    },
+                    Vertex {
+                        position: [w, h],
+                        normal: [1.0, 1.0],
+                        tex_coords: [1.0, 1.0],
+                        color,
+                    },
+                    Vertex {
+                        position: [w, -h],
+                        normal: [1.0, 0.0],
+                        tex_coords: [1.0, 0.0],
+                        color,
+                    },
+                    Vertex {
+                        position: [-w, -h],
+                        normal: [0.0, 0.0],
+                        tex_coords: [0.0, 0.0],
+                        color,
+                    },
+                    Vertex {
+                        position: [-w, h],
+                        normal: [0.0, 1.0],
+                        tex_coords: [0.0, 1.0],
+                        color,
+                    },
+                ];
 
-                let raw = RawImage2d::from_raw_rgba_reversed(
-                    buf.into_iter()
-                        .flatten()
-                        .flat_map(|(r, g, b, a)| [r, g, b, a])
-                        .collect::<Vec<_>>()
-                        .as_slice(),
-                    (w as u32, h as u32),
-                );
+                VertexBuffer::new(d, &vertices).unwrap()
+            };
 
-                let texture = glium::Texture2d::new(d, raw).unwrap();
-
-                // Scaling down the mesh forces the font size to get bigger,
-                // which results in higher quality textures and less blur.
-                let w = gj2gl::coord(w as i32) * 0.5;
-                let h = gj2gl::coord(h as i32) * 0.5;
-                let vb = VertexBuffer::new(
-                    d,
-                    &[
-                        Vertex {
-                            position: [-w, h],
-                            normal: [0.0, 1.0],
-                            tex_coords: [0.0, 1.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [w, h],
-                            normal: [1.0, 1.0],
-                            tex_coords: [1.0, 1.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [-w, -h],
-                            normal: [0.0, 0.0],
-                            tex_coords: [0.0, 0.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [w, -h],
-                            normal: [1.0, 0.0],
-                            tex_coords: [1.0, 0.0],
-                            color,
-                        },
-                    ],
+            target
+                .draw(
+                    &vb,
+                    glium::index::NoIndices(indices),
+                    &shaders.shape,
+                    &uniforms,
+                    &params,
                 )
-                .unwrap();
-
-                let uniforms = uniforms.add("tex", texture);
-
-                target
-                    .draw(
-                        &vb,
-                        glium::index::NoIndices(indices),
-                        &shaders.texture,
-                        &uniforms,
-                        &params,
-                    )
-                    .expect("failed to draw texture");
-            }
-            Sprite::Texture {
-                dimensions,
-                w,
-                h,
-                data,
-                ..
-            } => {
-                let raw = glium::texture::RawImage2d::from_raw_rgba_reversed(data, *dimensions);
-                let texture = glium::Texture2d::new(d, raw).unwrap();
-
-                let w = gj2gl::coord(*w) / 2.0;
-                let h = gj2gl::coord(*h) / 2.0;
-
-                let vb = if ex.fill {
-                    let vertices = [
-                        Vertex {
-                            position: [-w, h],
-                            normal: [0.0, 1.0],
-                            tex_coords: [0.0, 1.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [w, h],
-                            normal: [1.0, 1.0],
-                            tex_coords: [1.0, 1.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [-w, -h],
-                            normal: [0.0, 0.0],
-                            tex_coords: [0.0, 0.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [w, -h],
-                            normal: [1.0, 0.0],
-                            tex_coords: [1.0, 0.0],
-                            color,
-                        },
-                    ];
-
-                    VertexBuffer::new(d, &vertices).unwrap()
-                } else {
-                    let vertices = [
-                        Vertex {
-                            position: [-w, h],
-                            normal: [0.0, 1.0],
-                            tex_coords: [0.0, 1.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [w, h],
-                            normal: [1.0, 1.0],
-                            tex_coords: [1.0, 1.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [w, -h],
-                            normal: [1.0, 0.0],
-                            tex_coords: [1.0, 0.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [-w, -h],
-                            normal: [0.0, 0.0],
-                            tex_coords: [0.0, 0.0],
-                            color,
-                        },
-                        Vertex {
-                            position: [-w, h],
-                            normal: [0.0, 1.0],
-                            tex_coords: [0.0, 1.0],
-                            color,
-                        },
-                    ];
-
-                    VertexBuffer::new(d, &vertices).unwrap()
-                };
-
-                let uniforms = uniforms.add("tex", texture);
-
-                target
-                    .draw(
-                        &vb,
-                        glium::index::NoIndices(indices),
-                        &shaders.texture,
-                        &uniforms,
-                        &params,
-                    )
-                    .expect("failed to draw texture");
-            }
+                .expect("failed to draw rect");
         }
     }
 
-    /// Returns the basic data for the sprite.
-    pub fn sprite_data(&self) -> &SpriteData {
-        match self {
-            Sprite::Rect { ex, .. }
-            | Sprite::Circle { ex, .. }
-            | Sprite::Triangle { ex, .. }
-            | Sprite::Text { ex, .. }
-            | Sprite::Texture { ex, .. } => ex,
+    impl Circle {
+        pub(crate) fn draw(
+            &self,
+            target: &mut Frame,
+            ex: SpriteData,
+            d: &Display,
+            shaders: &Shaders,
+        ) {
+            let mut params = glium::DrawParameters {
+                blend: Blend::alpha_blending(),
+                ..Default::default()
+            };
+
+            let color = ex.color.to_f32();
+
+            let indices = if ex.fill {
+                glium::index::PrimitiveType::TriangleStrip
+            } else {
+                params.polygon_mode = PolygonMode::Line;
+                params.line_width = Some(gj2gl::coord(ex.stroke_weight as i32 + 500));
+                glium::index::PrimitiveType::LineStrip
+            };
+
+            let (s_width, s_height) = target.get_dimensions();
+            let ratio = s_height as f32 / s_width as f32;
+            let a = -ex.angle * (PI / 180.0);
+            let mat = [
+                [a.cos() * ratio, a.sin(), 0.0, 0.0],
+                [-a.sin(), a.cos(), 0.0, 0.0],
+                [0.0, 0.0, (ex.depth as f32) / 256.0, 0.0],
+                [gj2gl::coord(ex.x), gj2gl::coord(ex.y), 0.0, 1.0],
+            ];
+
+            let uniforms = uniform! {
+                matrix: mat,
+            };
+
+            let r = gj2gl::coord(self.r);
+            let mut vertices = Vec::new();
+
+            let mut a = 0.0f32;
+            while a <= 360.0 {
+                let pos = [r * a.cos(), r * a.sin()];
+                let sum = pos[0] + pos[1];
+                vertices.push(Vertex {
+                    position: pos,
+                    normal: [pos[0] / sum, pos[1] / sum],
+                    color,
+                    tex_coords: [pos[0] + 0.5, pos[1] + 0.5],
+                });
+
+                if ex.fill && a % 1.0 == 0.0 {
+                    vertices.push(Vertex {
+                        position: [0.0, 0.0],
+                        normal: [1.0, 0.0],
+                        color,
+                        tex_coords: [0.5, 0.5],
+                    });
+                }
+
+                a += 0.5;
+            }
+
+            let vb = VertexBuffer::new(d, &vertices).unwrap();
+
+            target
+                .draw(
+                    &vb,
+                    glium::index::NoIndices(indices),
+                    &shaders.shape,
+                    &uniforms,
+                    &params,
+                )
+                .expect("failed to draw rect");
         }
     }
 
-    /// Returns the basic data for the sprite.
-    pub fn sprite_data_mut(&mut self) -> &mut SpriteData {
-        match self {
-            Sprite::Rect { ex, .. }
-            | Sprite::Circle { ex, .. }
-            | Sprite::Triangle { ex, .. }
-            | Sprite::Text { ex, .. }
-            | Sprite::Texture { ex, .. } => ex,
+    impl Triangle {
+        pub(crate) fn draw(
+            &self,
+            target: &mut Frame,
+            ex: SpriteData,
+            d: &Display,
+            shaders: &Shaders,
+        ) {
+            let params = glium::DrawParameters {
+                blend: Blend::alpha_blending(),
+                ..Default::default()
+            };
+
+            let color = ex.color.to_f32();
+
+            let (s_width, s_height) = target.get_dimensions();
+            let ratio = s_height as f32 / s_width as f32;
+            let a = -ex.angle * (PI / 180.0);
+            let mat = [
+                [a.cos() * ratio, a.sin(), 0.0, 0.0],
+                [-a.sin(), a.cos(), 0.0, 0.0],
+                [0.0, 0.0, (ex.depth as f32) / 256.0, 0.0],
+                [gj2gl::coord(ex.x), gj2gl::coord(ex.y), 0.0, 1.0],
+            ];
+
+            let uniforms = uniform! {
+                matrix: mat,
+            };
+
+            let w = gj2gl::coord(self.w) / 2.0;
+            let h = gj2gl::coord(self.h) / 2.0;
+
+            let vertices = [
+                Vertex {
+                    position: [-w, -h],
+                    normal: [-w, -h],
+                    color,
+                    tex_coords: [0.0, 0.0],
+                },
+                Vertex {
+                    position: [w, -h],
+                    normal: [w, -h],
+                    color,
+                    tex_coords: [1.0, 0.0],
+                },
+                Vertex {
+                    position: [0.0, h],
+                    normal: [0.0, h],
+                    color,
+                    tex_coords: [0.5, 1.0],
+                },
+            ];
+
+            let vb = VertexBuffer::new(d, &vertices).unwrap();
+            target
+                .draw(
+                    &vb,
+                    glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
+                    &shaders.shape,
+                    &uniforms,
+                    &params,
+                )
+                .expect("failed to draw triangle");
+        }
+    }
+
+    impl Text {
+        pub(crate) fn draw(
+            &self,
+            target: &mut Frame,
+            ex: SpriteData,
+            d: &Display,
+            shaders: &Shaders,
+        ) {
+            let mut params = glium::DrawParameters {
+                blend: Blend::alpha_blending(),
+                ..Default::default()
+            };
+
+            let color = ex.color.to_f32();
+
+            let indices = if ex.fill {
+                glium::index::PrimitiveType::TriangleStrip
+            } else {
+                params.polygon_mode = PolygonMode::Line;
+                params.line_width = Some(gj2gl::coord(ex.stroke_weight as i32 + 500));
+                glium::index::PrimitiveType::LineStrip
+            };
+
+            let (s_width, s_height) = target.get_dimensions();
+            let ratio = s_height as f32 / s_width as f32;
+            let a = -ex.angle * (PI / 180.0);
+            let mat = [
+                [a.cos() * ratio, a.sin(), 0.0, 0.0],
+                [-a.sin(), a.cos(), 0.0, 0.0],
+                [0.0, 0.0, (ex.depth as f32) / 256.0, 0.0],
+                [gj2gl::coord(ex.x), gj2gl::coord(ex.y), 0.0, 1.0],
+            ];
+
+            let (buf, w, h) = text::render_glyphs(&self.font, self.font_size, &self.text, &ex);
+
+            let raw = RawImage2d::from_raw_rgba_reversed(
+                buf.into_iter()
+                    .flatten()
+                    .flat_map(|(r, g, b, a)| [r, g, b, a])
+                    .collect::<Vec<_>>()
+                    .as_slice(),
+                (w as u32, h as u32),
+            );
+
+            let texture = glium::Texture2d::new(d, raw).unwrap();
+
+            // Scaling down the mesh forces the font size to get bigger,
+            // which results in higher quality textures and less blur.
+            let w = gj2gl::coord(w as i32) * 0.5;
+            let h = gj2gl::coord(h as i32) * 0.5;
+            let vb = VertexBuffer::new(
+                d,
+                &[
+                    Vertex {
+                        position: [-w, h],
+                        normal: [0.0, 1.0],
+                        tex_coords: [0.0, 1.0],
+                        color,
+                    },
+                    Vertex {
+                        position: [w, h],
+                        normal: [1.0, 1.0],
+                        tex_coords: [1.0, 1.0],
+                        color,
+                    },
+                    Vertex {
+                        position: [-w, -h],
+                        normal: [0.0, 0.0],
+                        tex_coords: [0.0, 0.0],
+                        color,
+                    },
+                    Vertex {
+                        position: [w, -h],
+                        normal: [1.0, 0.0],
+                        tex_coords: [1.0, 0.0],
+                        color,
+                    },
+                ],
+            )
+            .unwrap();
+
+            let uniforms = uniform! {
+                matrix: mat,
+                tex: texture,
+            };
+
+            target
+                .draw(
+                    &vb,
+                    glium::index::NoIndices(indices),
+                    &shaders.texture,
+                    &uniforms,
+                    &params,
+                )
+                .expect("failed to draw texture");
+        }
+    }
+
+    impl Texture {
+        pub(crate) fn draw(
+            &self,
+            target: &mut Frame,
+            ex: SpriteData,
+            d: &Display,
+            shaders: &Shaders,
+        ) {
+            let mut params = glium::DrawParameters {
+                blend: Blend::alpha_blending(),
+                ..Default::default()
+            };
+
+            let color = ex.color.to_f32();
+
+            let indices = if ex.fill {
+                glium::index::PrimitiveType::TriangleStrip
+            } else {
+                params.polygon_mode = PolygonMode::Line;
+                params.line_width = Some(gj2gl::coord(ex.stroke_weight as i32 + 500));
+                glium::index::PrimitiveType::LineStrip
+            };
+
+            let (s_width, s_height) = target.get_dimensions();
+            let ratio = s_height as f32 / s_width as f32;
+            let a = -ex.angle * (PI / 180.0);
+            let mat = [
+                [a.cos() * ratio, a.sin(), 0.0, 0.0],
+                [-a.sin(), a.cos(), 0.0, 0.0],
+                [0.0, 0.0, (ex.depth as f32) / 256.0, 0.0],
+                [gj2gl::coord(ex.x), gj2gl::coord(ex.y), 0.0, 1.0],
+            ];
+
+            let raw =
+                glium::texture::RawImage2d::from_raw_rgba_reversed(&self.data, self.dimensions);
+            let texture = glium::Texture2d::new(d, raw).unwrap();
+
+            let w = gj2gl::coord(self.w) / 2.0;
+            let h = gj2gl::coord(self.h) / 2.0;
+
+            let vb = if ex.fill {
+                let vertices = [
+                    Vertex {
+                        position: [-w, h],
+                        normal: [0.0, 1.0],
+                        tex_coords: [0.0, 1.0],
+                        color,
+                    },
+                    Vertex {
+                        position: [w, h],
+                        normal: [1.0, 1.0],
+                        tex_coords: [1.0, 1.0],
+                        color,
+                    },
+                    Vertex {
+                        position: [-w, -h],
+                        normal: [0.0, 0.0],
+                        tex_coords: [0.0, 0.0],
+                        color,
+                    },
+                    Vertex {
+                        position: [w, -h],
+                        normal: [1.0, 0.0],
+                        tex_coords: [1.0, 0.0],
+                        color,
+                    },
+                ];
+
+                VertexBuffer::new(d, &vertices).unwrap()
+            } else {
+                let vertices = [
+                    Vertex {
+                        position: [-w, h],
+                        normal: [0.0, 1.0],
+                        tex_coords: [0.0, 1.0],
+                        color,
+                    },
+                    Vertex {
+                        position: [w, h],
+                        normal: [1.0, 1.0],
+                        tex_coords: [1.0, 1.0],
+                        color,
+                    },
+                    Vertex {
+                        position: [w, -h],
+                        normal: [1.0, 0.0],
+                        tex_coords: [1.0, 0.0],
+                        color,
+                    },
+                    Vertex {
+                        position: [-w, -h],
+                        normal: [0.0, 0.0],
+                        tex_coords: [0.0, 0.0],
+                        color,
+                    },
+                    Vertex {
+                        position: [-w, h],
+                        normal: [0.0, 1.0],
+                        tex_coords: [0.0, 1.0],
+                        color,
+                    },
+                ];
+
+                VertexBuffer::new(d, &vertices).unwrap()
+            };
+
+            let uniforms = uniform! {
+                matrix: mat,
+                tex: texture,
+            };
+
+            target
+                .draw(
+                    &vb,
+                    glium::index::NoIndices(indices),
+                    &shaders.texture,
+                    &uniforms,
+                    &params,
+                )
+                .expect("failed to draw texture");
         }
     }
 }

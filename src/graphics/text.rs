@@ -44,7 +44,7 @@ fn layout_paragraph<F, SF>(
     }
 }
 
-pub fn render_glyphs(
+pub(crate) fn render_glyphs(
     font: &FontArc,
     font_size: f32,
     text: &str,

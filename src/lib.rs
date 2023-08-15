@@ -5,16 +5,23 @@ use std::time::{Duration, Instant};
 
 pub use genji_macros::init;
 
+pub mod ecs;
 pub mod graphics;
 pub mod input;
-pub mod state;
 pub mod prelude;
+pub mod state;
 
 use input::Key;
 
+use ecs::World;
 use glium::{glutin, Surface};
-use state::{GameState, Sprites, SPRITES_CHANGED};
-
+use graphics::{
+    sprite::{Circle, Rect, Text, Texture, Triangle},
+    Angle, Depth, Fill, Position, SpriteData, StrokeWeight,
+    Sprite
+};
+use prelude::Color;
+use state::GameState;
 
 mod helpers;
 use helpers::gl2gj;
@@ -22,11 +29,11 @@ use helpers::gl2gj;
 /// Runs the engine code for genji. Automatically run
 /// via `genji::init`, so please don't do this manually.
 pub fn main<T: 'static>(
-    init: fn() -> (GameState<T>, Sprites),
-    onloop: fn(&mut GameState<T>, &mut Sprites) -> bool,
-    close: fn(GameState<T>, Sprites),
+    init: fn() -> (GameState<T>, World),
+    onloop: fn(&mut GameState<T>, &mut World) -> bool,
+    close: fn(GameState<T>, World),
 ) {
-    let (state, sprites) = init();
+    let (state, world) = init();
 
     let event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new()
@@ -38,12 +45,12 @@ pub fn main<T: 'static>(
 
     let shaders = graphics::shaders::Shaders::new(&display);
 
-    let mut sprite_cache = helpers::sprite_filter(sprites.as_ref().clone());
+    // let mut sprite_cache = helpers::sprite_filter(world.as_ref().clone());
     let mut last = Instant::now();
     let mut closed = false;
 
     let mut state = Some(state);
-    let mut sprites = Some(sprites);
+    let mut world = Some(world);
     event_loop.run(move |ev, _, control_flow| {
         if closed {
             // panic!("glutin didn't close");
@@ -63,7 +70,7 @@ pub fn main<T: 'static>(
                     }
                     if state.as_ref().unwrap().close_on_request {
                         control_flow.set_exit();
-                        close(state.take().unwrap(), sprites.take().unwrap());
+                        close(state.take().unwrap(), world.take().unwrap());
                         closed = true;
                     } else {
                         state.as_mut().unwrap().asked_to_close = true;
@@ -130,13 +137,13 @@ pub fn main<T: 'static>(
             }
 
             glutin::event::Event::RedrawRequested(_) => {
-                let sprites_ref = sprites.as_mut().unwrap();
-                if onloop(state_ref, sprites_ref) {
+                let world_ref = world.as_mut().unwrap();
+                if onloop(state_ref, world_ref) {
                     control_flow.set_exit();
                     if closed {
                         panic!("glutin tried to close twice");
                     }
-                    close(state.take().unwrap(), sprites.take().unwrap());
+                    close(state.take().unwrap(), world.take().unwrap());
                     closed = true;
                     return;
                 }
@@ -151,18 +158,54 @@ pub fn main<T: 'static>(
                 last = Instant::now();
 
                 let mut target = display.draw();
-                if unsafe { *SPRITES_CHANGED } {
-                    sprite_cache = helpers::sprite_filter(sprites_ref.as_ref().clone());
-                    unsafe { *SPRITES_CHANGED = false };
-                }
+                // if unsafe { *SPRITES_CHANGED } {
+                //     sprite_cache = helpers::sprite_filter(sprites_ref.as_ref().clone());
+                //     unsafe { *SPRITES_CHANGED = false };
+                // }
 
                 if let Some(col) = state_ref.clear_color {
                     let col = col.to_f32();
                     target.clear_color_and_depth((col[0], col[1], col[2], col[3]), 1.0);
                 }
 
-                for sprite in &sprite_cache {
-                    sprite.draw(&mut target, &display, &shaders);
+                let mut sorted = Vec::new();
+                macro_rules! draw_sprites {
+                    ( $( $sprite_type:ident ),* ) => {$(
+                        let mut query = world_ref.query::<(&$sprite_type, &Position)>();
+                        for (id, (sprite, pos)) in query.iter() {
+                            let mut ex = SpriteData::new();
+                            ex.x = pos.0;
+                            ex.y = pos.1;
+
+                            if let Ok(angle) = world_ref.get::<&Angle>(id) {
+                                ex.angle = **angle;
+                            }
+
+                            if let Ok(color) = world_ref.get::<&Color>(id) {
+                                ex.color = *color;
+                            }
+
+                            if let Ok(depth) = world_ref.get::<&Depth>(id) {
+                                ex.depth = **depth;
+                            }
+
+                            if let Ok(fill) = world_ref.get::<&Fill>(id) {
+                                ex.fill = **fill;
+                            }
+
+                            if let Ok(stroke_weight) = world_ref.get::<&StrokeWeight>(id) {
+                                ex.stroke_weight = **stroke_weight;
+                            }
+
+                            sorted.push((Sprite::$sprite_type(sprite), ex));
+                        }
+                    )*};
+                }
+
+                draw_sprites!(Rect, Circle, Triangle, Text, Texture);
+                sorted.sort_by(|(_, ex1), (_, ex2)| ex2.depth.cmp(&ex1.depth));
+                for (sprite, ex) in sorted.into_iter().filter(|(_, ex)| ex.depth > 0) {
+                    sprite.draw(&mut target, ex, &display, &shaders);
                 }
 
                 target.finish().expect("failed to swap buffers");
