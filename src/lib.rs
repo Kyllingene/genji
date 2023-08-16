@@ -66,9 +66,6 @@ pub fn main<T: 'static>(
                     state.as_mut().unwrap().height = size.height;
                 }
                 glutin::event::WindowEvent::CloseRequested => {
-                    if closed {
-                        panic!("glutin tried to close twice");
-                    }
                     if state.as_ref().unwrap().close_on_request {
                         control_flow.set_exit();
                         close(state.take().unwrap(), world.take().unwrap());
@@ -141,9 +138,6 @@ pub fn main<T: 'static>(
                 let world_ref = world.as_mut().unwrap();
                 if onloop(state_ref, world_ref) {
                     control_flow.set_exit();
-                    if closed {
-                        panic!("glutin tried to close twice");
-                    }
                     close(state.take().unwrap(), world.take().unwrap());
                     closed = true;
                     return;

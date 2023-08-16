@@ -121,7 +121,7 @@ impl<T> GameState<T> {
 
             scroll: 0,
 
-            close_on_request: false,
+            close_on_request: true,
             asked_to_close: false,
         }
     }
