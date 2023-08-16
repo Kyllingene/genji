@@ -35,7 +35,7 @@ macro_rules! use_files {
 }
 
 pub use crate::{
-    audio::{Audio, Sound, SoundSettings, SoundStore},
+    audio::{Audio, Sound, SoundSettings, SoundStore, MusicStore},
     ecs::{Entity, World},
     graphics::{sprite::{self, ImageFormat}, Angle, Color, Depth, Fill, Position, StrokeWeight},
     input::Key,

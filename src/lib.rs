@@ -1,6 +1,6 @@
-#![doc = include_str!("../lib-doc.md")]
+#![doc = include_str!("../README.md")]
 
-// TODO: add audio
+// TODO: turn old doctests into proper tests
 
 use std::thread;
 use std::time::{Duration, Instant};
@@ -55,7 +55,7 @@ pub fn main<T: 'static>(
     let mut audio = Audio::new();
     event_loop.run(move |ev, _, control_flow| {
         if state.is_none() || world.is_none() {
-            // TODO: should this panic/error?
+            // TODO: should genji panic/error on double-close?
             return;
         }
         let state_ref = state.as_mut().unwrap();
@@ -112,7 +112,7 @@ pub fn main<T: 'static>(
                         glutin::event::MouseButton::Right => Key::RClick,
                         glutin::event::MouseButton::Middle => Key::MClick,
 
-                        // TODO: is there a better way to do this?
+                        // TODO: should extra mouse buttons be handled better?
                         glutin::event::MouseButton::Other(i) => Key::M1 + (i % 4),
                     };
 

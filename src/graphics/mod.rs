@@ -2,24 +2,24 @@
 //! 
 //! In genji, sprites are components that can optionally
 //! have other components attached to add information. The
-//! exception is [`Position`](../struct.Position.html),
+//! exception is [`Position`],
 //! which must be specified or the sprite will not be drawn.
 //! All the others have default values.
 //! 
 //! The following sprites are available as components:
-//! [`Rect`](../sprite/struct.Rect.html),
-//! [`Circle`](../sprite/struct.Circle.html),
-//! [`Triangle`](../sprite/struct.Triangle.html),
-//! [`Text`](../sprite/struct.Text.html),
-//! and [`Texture`](../sprite/struct.Texture.html).
+//! [`Rect`](sprite::Rect),
+//! [`Circle`](sprite::Circle),
+//! [`Triangle`](sprite::Triangle),
+//! [`Text`](sprite::Text),
+//! and [`Texture`](sprite::Texture).
 //! 
 //! Data can be attached to sprites via several components:
-//! [`Angle`](../struct.Angle.html),
-//! [`Color`](../struct.Color.html),
-//! [`Depth`](../struct.Depth.html),
-//! [`Fill`](../struct.Fill.html),
-//! [`Position`](../struct.Position.html),
-//! [`StrokeWeight`](../struct.StrokeWeight.html).
+//! [`Angle`],
+//! [`Color`],
+//! [`Depth`],
+//! [`Fill`],
+//! [`Position`],
+//! [`StrokeWeight`].
 
 use std::ops::{Deref, DerefMut};
 
@@ -356,11 +356,11 @@ pub mod sprite {
     //! constructors.
     //! 
     //! The following sprites are available as components:
-    //! [`Rect`](../sprite/struct.Rect.html),
-    //! [`Circle`](../sprite/struct.Circle.html),
-    //! [`Triangle`](../sprite/struct.Triangle.html),
-    //! [`Text`](../sprite/struct.Text.html),
-    //! and [`Texture`](../sprite/struct.Texture.html).
+    //! [`Rect`],
+    //! [`Circle`],
+    //! [`Triangle`],
+    //! [`Text`],
+    //! and [`Texture`].
 
     use std::{
         f32::consts::PI,
@@ -465,8 +465,8 @@ pub mod sprite {
     /// A text sprite.
     ///
     /// A font must be passed at creation
-    /// using a [`FontArc`](https://docs.rs/ab_glyph/latest/ab_glyph/struct.FontArc.html)
-    /// from [`ab_glyph`](https://docs.rs/ab_glyph).
+    /// using a [`FontArc`]
+    /// from [`ab_glyph`].
     /// Alternatively, pass a path to a .otf or .ttf
     /// to load a font from a file using
     /// `text_font_from_file` instead of `font`.
@@ -499,9 +499,8 @@ pub mod sprite {
     ///
     /// You may either pass static data to `texture`,
     /// or pass a path to an image file to `texture_from_file`.
-    /// If using the former, you must pass an
-    /// [`ImageFormat`](https://docs.rs/image/latest/image/enum.ImageFormat.html)
-    /// (borrowed from [`image`](https://docs.rs/image/)).
+    /// If using the former, you must pass an [`ImageFormat`]
+    /// (borrowed from [`image`]).
     ///
     /// ```
     /// # use genji::{ecs::World, graphics::{Position, sprite::ImageFormat}};
@@ -529,7 +528,7 @@ pub mod sprite {
         pub h: i32,
     }
 
-    /// Creates a [`Rect`](../struct.Rect.html).
+    /// Creates a [`Rect`].
     ///
     /// ```
     /// # use genji::prelude::*;
@@ -548,7 +547,7 @@ pub mod sprite {
         Rect { w, h }
     }
 
-    /// Creates a [`Circle`](../struct.Circle.html).
+    /// Creates a [`Circle`].
     ///
     /// ```
     /// # use genji::prelude::*;
@@ -567,7 +566,7 @@ pub mod sprite {
         Circle { r }
     }
 
-    /// Creates a [`Triangle`](../struct.Triangle.html).
+    /// Creates a [`Triangle`].
     ///
     /// ```
     /// # use genji::prelude::*;
@@ -590,11 +589,10 @@ pub mod sprite {
         Triangle { w, h, o }
     }
 
-    /// Creates a [`Text`](../struct.Text.html) from static data.
+    /// Creates a [`Text`] from static data.
     ///
-    /// A font must be passed at creation
-    /// using a [`FontArc`](https://docs.rs/ab_glyph/latest/ab_glyph/struct.FontArc.html)
-    /// from [`ab_glyph`](https://docs.rs/ab_glyph).
+    /// A font must be passed at creation using a [`FontArc`]
+    /// from [`ab_glyph`].
     ///
     /// ```
     /// # use genji::{ecs::World, graphics::Position};
@@ -623,7 +621,7 @@ pub mod sprite {
         })
     }
 
-    /// Creates a [`Text`](../struct.Text.html) with a font file.
+    /// Creates a [`Text`] with a font file.
     ///
     /// The path must be to a valid .otf / .ttf file.
     ///
@@ -662,11 +660,10 @@ pub mod sprite {
         })
     }
 
-    /// Creates a [`Texture`](../struct.Texture.html) from static data.
+    /// Creates a [`Texture`] from static data.
     ///
-    /// You must pass an
-    /// [`ImageFormat`](https://docs.rs/image/latest/image/enum.ImageFormat.html)
-    /// (borrowed from [`image`](https://docs.rs/image/)).
+    /// You must pass an [`ImageFormat`]
+    /// (borrowed from [`image`]).
     ///
     /// ```
     /// # use genji::{ecs::World, graphics::{Position, sprite::ImageFormat}};
@@ -722,7 +719,7 @@ pub mod sprite {
         })
     }
 
-    /// Creates a [`Texture`](../struct.Texture.html) from an image file.
+    /// Creates a [`Texture`] from an image file.
     ///
     /// ```
     /// # use genji::{ecs::World, graphics::{Position, sprite::ImageFormat}};

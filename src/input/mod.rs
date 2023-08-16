@@ -4,7 +4,7 @@
 //! and exposes that through a wrapper struct to make
 //! indexing more convenient. Both keyboard keys and
 //! mouse buttons are stored in the same
-//! [`Key`](../enum.Key.html) enum.
+//! [`Key`] enum.
 //!
 //! ```
 //! # use genji::input::{Key, Keys};

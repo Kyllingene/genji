@@ -15,7 +15,7 @@ opt-level = 3
 
 ## Assets
 
-For images and fonts (the only two assets currently required), genji supports both loading from bytes and loading from a file. The method I would recommend for small games (the only ones this can really do) is using the provided `use_file!` and `use_files!` macros inside of a module to provide namespaced access to pre-loaded assets.
+For binary assets, genji supports both loading from a static slice and loading from a file. The method I would recommend for small games (genji's primary target) is using the provided `use_file!` and `use_files!` macros inside of a module to provide namespaced access to pre-loaded assets, then loading from a slice.
 
 Bundles and spritemaps are parts of an ideal future, but it may not come to fruition.
 

@@ -1,8 +1,8 @@
-//! Re-exports everything from [hecs](https://docs.rs/hecs/0.10.3/hecs/).
+//! Re-exports everything from [hecs].
 //!
-//! Genji uses the excellent [hecs](https://docs.rs/hecs/0.10.3/hecs/)
+//! Genji uses the excellent [hecs]
 //! ECS crate, with no real modifications. However, an
-//! [`EntityStore`](../struct.EntityStore.html) struct is provided
+//! [`EntityStore`] struct is provided
 //! to give ID's to entities.
 
 use std::collections::HashMap;
@@ -10,7 +10,7 @@ use std::collections::HashMap;
 pub use hecs::*;
 
 /// A way to store and access
-/// [`Entity`](https://docs.rs/hecs/0.10.3/hecs/struct.Entity.html)s
+/// [`Entity`]s
 /// via human-friendly names.
 #[derive(Clone, Debug, Default)]
 pub struct EntityStore(HashMap<String, Entity>);
