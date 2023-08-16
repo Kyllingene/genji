@@ -110,7 +110,6 @@ impl<T> GameState<T> {
             clear_color,
 
             state,
-            // sprites: HashMap::new(),
             keys: Keys::new(),
 
             fps: 1000 / fps,

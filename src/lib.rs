@@ -46,15 +46,13 @@ pub fn main<T: 'static>(
 
     let shaders = graphics::shaders::Shaders::new(&display);
 
-    // let mut sprite_cache = helpers::sprite_filter(world.as_ref().clone());
     let mut last = Instant::now();
-    let mut closed = false;
 
     let mut state = Some(state);
     let mut world = Some(world);
     event_loop.run(move |ev, _, control_flow| {
-        if closed {
-            // panic!("glutin didn't close");
+        if state.is_none() || world.is_none() {
+            // TODO: should this panic/error?
             return;
         }
         let state_ref = state.as_mut().unwrap();
@@ -62,17 +60,17 @@ pub fn main<T: 'static>(
             glutin::event::Event::WindowEvent { event, .. } => match event {
                 glutin::event::WindowEvent::Resized(size) => {
                     display.gl_window().resize(size);
-                    state.as_mut().unwrap().width = size.width;
-                    state.as_mut().unwrap().height = size.height;
+                    state_ref.width = size.width;
+                    state_ref.height = size.height;
                 }
                 glutin::event::WindowEvent::CloseRequested => {
-                    if state.as_ref().unwrap().close_on_request {
+                    state_ref.asked_to_close = true;
+                    if state_ref.close_on_request {
                         control_flow.set_exit();
                         close(state.take().unwrap(), world.take().unwrap());
-                        closed = true;
                     }
 
-                    state.as_mut().unwrap().asked_to_close = true;
+                    return;
                 }
                 glutin::event::WindowEvent::ModifiersChanged(modifiers) => {
                     state_ref.keys[Key::Alt] = modifiers.alt();
@@ -139,7 +137,6 @@ pub fn main<T: 'static>(
                 if onloop(state_ref, world_ref) {
                     control_flow.set_exit();
                     close(state.take().unwrap(), world.take().unwrap());
-                    closed = true;
                     return;
                 }
 
