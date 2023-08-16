@@ -21,8 +21,6 @@
 //! [`Position`](../struct.Position.html),
 //! [`StrokeWeight`](../struct.StrokeWeight.html).
 
-// TODO: document default component values in user-side docs
-
 use std::ops::{Deref, DerefMut};
 
 use glium::{Display, Frame};

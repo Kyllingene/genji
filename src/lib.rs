@@ -5,15 +5,17 @@
 use std::thread;
 use std::time::{Duration, Instant};
 
+use audio::Audio;
 pub use genji_macros::init;
 
+pub mod audio;
 pub mod ecs;
 pub mod graphics;
 pub mod input;
 pub mod prelude;
 pub mod state;
 
-use input::Key;
+use input::{Key, Keys};
 
 use ecs::World;
 use glium::{glutin, Surface};
@@ -31,7 +33,7 @@ use helpers::gl2gj;
 #[doc(hidden)]
 pub fn main<T: 'static>(
     init: fn() -> (GameState<T>, World),
-    onloop: fn(&mut GameState<T>, &mut World) -> bool,
+    onloop: fn(&mut GameState<T>, &mut World, &mut Audio) -> bool,
     close: fn(GameState<T>, World),
 ) {
     let (state, world) = init();
@@ -50,6 +52,7 @@ pub fn main<T: 'static>(
 
     let mut state = Some(state);
     let mut world = Some(world);
+    let mut audio = Audio::new();
     event_loop.run(move |ev, _, control_flow| {
         if state.is_none() || world.is_none() {
             // TODO: should this panic/error?
@@ -69,8 +72,6 @@ pub fn main<T: 'static>(
                         control_flow.set_exit();
                         close(state.take().unwrap(), world.take().unwrap());
                     }
-
-                    return;
                 }
                 glutin::event::WindowEvent::ModifiersChanged(modifiers) => {
                     state_ref.keys[Key::Alt] = modifiers.alt();
@@ -110,11 +111,16 @@ pub fn main<T: 'static>(
                         glutin::event::MouseButton::Left => Key::LClick,
                         glutin::event::MouseButton::Right => Key::RClick,
                         glutin::event::MouseButton::Middle => Key::MClick,
+
+                        // TODO: is there a better way to do this?
                         glutin::event::MouseButton::Other(i) => Key::M1 + (i % 4),
                     };
 
                     match state {
-                        glutin::event::ElementState::Pressed => state_ref.keys[key] = true,
+                        glutin::event::ElementState::Pressed => {
+                            state_ref.keys[key] = true;
+                            state_ref.pressed[key] = true;
+                        }
                         glutin::event::ElementState::Released => state_ref.keys[key] = false,
                     }
                 }
@@ -134,7 +140,7 @@ pub fn main<T: 'static>(
 
             glutin::event::Event::RedrawRequested(_) => {
                 let world_ref = world.as_mut().unwrap();
-                if onloop(state_ref, world_ref) {
+                if onloop(state_ref, world_ref, &mut audio) {
                     control_flow.set_exit();
                     close(state.take().unwrap(), world.take().unwrap());
                     return;
@@ -202,6 +208,7 @@ pub fn main<T: 'static>(
 
                 target.finish().expect("failed to swap buffers");
 
+                state_ref.pressed = Keys::new();
                 state_ref.scroll = 0;
             }
 

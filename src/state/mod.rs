@@ -25,6 +25,7 @@
 //! # }
 //! ```
 
+use crate::ecs::EntityStore;
 use crate::graphics::Color;
 use crate::input::Keys;
 
@@ -46,7 +47,7 @@ use crate::input::Keys;
 ///
 /// state.close_on_request = false;
 ///
-/// // ...snip: in onloop
+/// // In onloop...
 /// # fn dummy(state: GameState<()>) -> bool {
 /// if state.asked_to_close {
 ///     return true;
@@ -64,6 +65,11 @@ pub struct GameState<T> {
 
     pub state: T,
     pub keys: Keys,
+
+    /// Keys that were pressed this frame.
+    pub pressed: Keys,
+
+    pub store: EntityStore,
 
     pub fps: u128,
     pub delta: u128,
@@ -111,6 +117,9 @@ impl<T> GameState<T> {
 
             state,
             keys: Keys::new(),
+            pressed: Keys::new(),
+
+            store: EntityStore::new(),
 
             fps: 1000 / fps,
             delta: 0,
