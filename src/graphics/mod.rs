@@ -678,14 +678,13 @@ pub mod sprite {
     ///     Position(0, 0),
     /// ));
     /// ```
-    pub fn texture<S, D>(
+    pub fn texture<D>(
         data: D,
         fmt: ImageFormat,
         w: Option<i32>,
         h: Option<i32>,
     ) -> Option<Texture>
     where
-        S: ToString,
         D: Into<Vec<u8>>,
     {
         let data = data.into();
