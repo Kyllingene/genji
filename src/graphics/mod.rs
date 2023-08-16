@@ -33,6 +33,8 @@ use shaders::Shaders;
 mod text;
 
 /// An RGBA color in byte format.
+/// 
+/// Defaults to opaque white.
 ///
 /// ```
 /// # use genji::graphics::Color;
@@ -142,6 +144,8 @@ pub struct Position(pub i32, pub i32);
 
 /// A sprites depth. `0` hides the sprite.
 ///
+/// Defaults to `1`.
+///
 /// ```
 /// # use genji::prelude::*;
 /// # struct FakeWorld;
@@ -174,6 +178,8 @@ impl DerefMut for Depth {
 }
 
 /// The angle of a sprite.
+///
+/// Defaults to `0.0`.
 ///
 /// ```
 /// # use genji::prelude::*;
@@ -209,6 +215,8 @@ impl DerefMut for Angle {
 /// Whether or not to fill the sprite.
 /// Doesn't apply to textures or text.
 ///
+/// Defaults to `true`.
+///
 /// ```
 /// # use genji::prelude::*;
 /// # struct FakeWorld;
@@ -241,6 +249,8 @@ impl DerefMut for Fill {
 }
 
 /// The weight of the lines if `!fill` (only for shapes).
+///
+/// Defaults to `4`.
 ///
 /// ```
 /// # use genji::prelude::*;
