@@ -1,4 +1,6 @@
-#![doc = include_str!("../README.md")]
+#![doc = include_str!("../lib-doc.md")]
+
+// TODO: add audio
 
 use std::thread;
 use std::time::{Duration, Instant};
@@ -17,10 +19,8 @@ use ecs::World;
 use glium::{glutin, Surface};
 use graphics::{
     sprite::{Circle, Rect, Text, Texture, Triangle},
-    Angle, Depth, Fill, Position, SpriteData, StrokeWeight,
-    Sprite
+    Angle, Color, Depth, Fill, Position, Sprite, SpriteData, StrokeWeight,
 };
-use prelude::Color;
 use state::GameState;
 
 mod helpers;
@@ -28,6 +28,7 @@ use helpers::gl2gj;
 
 /// Runs the engine code for genji. Automatically run
 /// via `genji::init`, so please don't do this manually.
+#[doc(hidden)]
 pub fn main<T: 'static>(
     init: fn() -> (GameState<T>, World),
     onloop: fn(&mut GameState<T>, &mut World) -> bool,

@@ -1,6 +1,31 @@
+//! Utilities for drawing things to the screen.
+//! 
+//! In genji, sprites are components that can optionally
+//! have other components attached to add information. The
+//! exception is [`Position`](../struct.Position.html),
+//! which must be specified or the sprite will not be drawn.
+//! All the others have default values.
+//! 
+//! The following sprites are available as components:
+//! [`Rect`](../sprite/struct.Rect.html),
+//! [`Circle`](../sprite/struct.Circle.html),
+//! [`Triangle`](../sprite/struct.Triangle.html),
+//! [`Text`](../sprite/struct.Text.html),
+//! and [`Texture`](../sprite/struct.Texture.html).
+//! 
+//! Data can be attached to sprites via several components:
+//! [`Angle`](../struct.Angle.html),
+//! [`Color`](../struct.Color.html),
+//! [`Depth`](../struct.Depth.html),
+//! [`Fill`](../struct.Fill.html),
+//! [`Position`](../struct.Position.html),
+//! [`StrokeWeight`](../struct.StrokeWeight.html).
+
+// TODO: document default component values in user-side docs
+
 use std::ops::{Deref, DerefMut};
 
-use glium::{Frame, Display};
+use glium::{Display, Frame};
 
 pub(crate) mod shaders;
 use shaders::Shaders;
@@ -8,7 +33,19 @@ use shaders::Shaders;
 mod text;
 
 /// An RGBA color in byte format.
-#[derive(Debug, Clone, Copy)]
+///
+/// ```
+/// # use genji::graphics::Color;
+///
+/// let color1 = Color::new(12, 34, 56, 255);
+/// let color2 = Color::default()
+///     .r(12)
+///     .g(34)
+///     .b(56);
+///
+/// assert_eq!(color1, color2);
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Color {
     /// The red channel of the color.
     pub r: u8,
@@ -85,10 +122,40 @@ impl Default for Color {
 }
 
 /// A position to apply to a sprite.
+///
+/// ```
+/// # use genji::prelude::*;
+/// # struct FakeWorld;
+/// # impl FakeWorld {
+/// #   pub fn spawn<T>(&self, x: T) {}
+/// # }
+/// # let world = FakeWorld;
+/// # fn some_sprite() -> () { () }
+///
+/// world.spawn((
+///     some_sprite(),
+///     Position(25, 25),
+/// ));
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Position(pub i32, pub i32);
 
 /// A sprites depth. `0` hides the sprite.
+///
+/// ```
+/// # use genji::prelude::*;
+/// # struct FakeWorld;
+/// # impl FakeWorld {
+/// #   pub fn spawn<T>(&self, x: T) {}
+/// # }
+/// # let world = FakeWorld;
+/// # fn some_sprite() -> () { () }
+///
+/// world.spawn((
+///     some_sprite(),
+///     Depth(123),
+/// ));
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Depth(pub u32);
 
@@ -107,6 +174,21 @@ impl DerefMut for Depth {
 }
 
 /// The angle of a sprite.
+///
+/// ```
+/// # use genji::prelude::*;
+/// # struct FakeWorld;
+/// # impl FakeWorld {
+/// #   pub fn spawn<T>(&self, x: T) {}
+/// # }
+/// # let world = FakeWorld;
+/// # fn some_sprite() -> () { () }
+///
+/// world.spawn((
+///     some_sprite(),
+///     Angle(32.3),
+/// ));
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Angle(pub f32);
 
@@ -126,6 +208,21 @@ impl DerefMut for Angle {
 
 /// Whether or not to fill the sprite.
 /// Doesn't apply to textures or text.
+///
+/// ```
+/// # use genji::prelude::*;
+/// # struct FakeWorld;
+/// # impl FakeWorld {
+/// #   pub fn spawn<T>(&self, x: T) {}
+/// # }
+/// # let world = FakeWorld;
+/// # fn some_sprite() -> () { () }
+///
+/// world.spawn((
+///     some_sprite(),
+///     Fill(false),
+/// ));
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Fill(pub bool);
 
@@ -144,6 +241,21 @@ impl DerefMut for Fill {
 }
 
 /// The weight of the lines if `!fill` (only for shapes).
+///
+/// ```
+/// # use genji::prelude::*;
+/// # struct FakeWorld;
+/// # impl FakeWorld {
+/// #   pub fn spawn<T>(&self, x: T) {}
+/// # }
+/// # let world = FakeWorld;
+/// # fn some_sprite() -> () { () }
+///
+/// world.spawn((
+///     some_sprite(),
+///     StrokeWeight(8),
+/// ));
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct StrokeWeight(pub u32);
 
@@ -161,7 +273,7 @@ impl DerefMut for StrokeWeight {
     }
 }
 
-/// Used to sort each sprite.
+/// Used to sort sprites before rendering.
 pub(crate) enum Sprite<'a> {
     Rect(&'a sprite::Rect),
     Circle(&'a sprite::Circle),
@@ -171,13 +283,7 @@ pub(crate) enum Sprite<'a> {
 }
 
 impl<'a> Sprite<'a> {
-    pub(crate) fn draw(
-        &self,
-        target: &mut Frame,
-        ex: SpriteData,
-        d: &Display,
-        shaders: &Shaders,
-    ) {
+    pub(crate) fn draw(&self, target: &mut Frame, ex: SpriteData, d: &Display, shaders: &Shaders) {
         match self {
             Self::Rect(sprite) => sprite.draw(target, ex, d, shaders),
             Self::Circle(sprite) => sprite.draw(target, ex, d, shaders),
@@ -221,57 +327,6 @@ impl SpriteData {
     pub fn new() -> Self {
         Self::default()
     }
-
-    //     /// Sets the horizontal position of the sprite.
-    //     /// Defaults to `0`.
-    //     pub fn x(mut self, x: i32) -> Self {
-    //         self.x = x;
-    //         self
-    //     }
-
-    //     /// Sets the vertical position of the sprite.
-    //     /// Defaults to `0`.
-    //     pub fn y(mut self, y: i32) -> Self {
-    //         self.y = y;
-    //         self
-    //     }
-
-    //     /// Sets the position of the sprite.
-    //     /// Defaults to `0, 0`.
-    //     pub fn xy(mut self, x: i32, y: i32) -> Self {
-    //         self.x = x;
-    //         self.y = y;
-    //         self
-    //     }
-
-    //     /// Sets the z-level of the sprite. `0` hides it.
-    //     /// Defaults to `1`.
-    //     pub fn depth(mut self, depth: u32) -> Self {
-    //         self.depth = depth;
-    //         self
-    //     }
-
-    //     /// Sets the rotation of the sprite, in degrees.
-    //     /// Defaults to `0.0`.
-    //     pub fn angle(mut self, angle: f32) -> Self {
-    //         self.angle = angle;
-    //         self
-    //     }
-
-    //     /// Sets whether or not to fill the sprite (only for shapes).
-    //     /// Defaults to `true`.
-    //     pub fn fill(mut self, fill: bool) -> Self {
-    //         self.fill = fill;
-    //         self
-    //     }
-
-    //     /// Sets the weight of the lines if `!fill` (only for shapes).
-    //     /// Defaults to `4`.
-    //     pub fn stroke_weight(mut self, stroke_weight: u32) -> Self {
-    //         self.stroke_weight = stroke_weight;
-    //         self
-    //     }
-    //     }
 }
 
 impl Default for SpriteData {
@@ -289,6 +344,16 @@ impl Default for SpriteData {
 }
 
 pub mod sprite {
+    //! The module containing the sprite types and their
+    //! constructors.
+    //! 
+    //! The following sprites are available as components:
+    //! [`Rect`](../sprite/struct.Rect.html),
+    //! [`Circle`](../sprite/struct.Circle.html),
+    //! [`Triangle`](../sprite/struct.Triangle.html),
+    //! [`Text`](../sprite/struct.Text.html),
+    //! and [`Texture`](../sprite/struct.Texture.html).
+
     use std::{
         f32::consts::PI,
         fmt::Debug,
@@ -309,69 +374,237 @@ pub mod sprite {
         Surface, VertexBuffer,
     };
 
+    /// An image format enum for loading images from
+    /// raw data.
     pub use image::ImageFormat;
 
     #[derive(Clone, Copy, Debug)]
     struct Vertex {
         position: [f32; 2],
-        normal: [f32; 2],
         color: [f32; 4],
         tex_coords: [f32; 2],
     }
 
-    implement_vertex!(Vertex, position, normal, color, tex_coords);
+    implement_vertex!(Vertex, position, color, tex_coords);
 
+    /// A rectangle sprite.
+    ///
+    /// ```
+    /// # use genji::prelude::*;
+    /// # struct FakeWorld;
+    /// # impl FakeWorld {
+    /// #   pub fn spawn<T>(&self, x: T) {}
+    /// # }
+    /// # let world = FakeWorld;
+    ///
+    /// world.spawn((
+    ///     sprite::rect(12, 34),
+    ///     Position(0, 0),
+    /// ));
+    /// ```
     #[derive(Debug, Clone, Copy)]
     pub struct Rect {
         pub w: i32,
         pub h: i32,
-        // ex: SpriteData,
     }
 
+    /// A circle sprite.
+    ///
+    /// ```
+    /// # use genji::prelude::*;
+    /// # struct FakeWorld;
+    /// # impl FakeWorld {
+    /// #   pub fn spawn<T>(&self, x: T) {}
+    /// # }
+    /// # let world = FakeWorld;
+    ///
+    /// world.spawn((
+    ///     sprite::circle(30),
+    ///     Position(0, 0),
+    /// ));
+    /// ```
     #[derive(Debug, Clone, Copy)]
     pub struct Circle {
         pub r: i32,
-        // ex: SpriteData,
     }
 
+    /// A triangle sprite.
+    ///
+    /// ```
+    /// # use genji::prelude::*;
+    /// # struct FakeWorld;
+    /// # impl FakeWorld {
+    /// #   pub fn spawn<T>(&self, x: T) {}
+    /// # }
+    /// # let world = FakeWorld;
+    ///
+    /// world.spawn((
+    ///     sprite::triangle(
+    ///         12, // width of the base
+    ///         34, // height from base -> tip
+    ///         8,  // horizontal offset of tip
+    ///     ),
+    ///     Position(0, 0),
+    /// ));
+    /// ```
     #[derive(Debug, Clone, Copy)]
     pub struct Triangle {
         pub w: i32,
         pub h: i32,
-        // ex: SpriteData,
+        pub o: i32,
     }
 
+    /// A text sprite.
+    ///
+    /// A font must be passed at creation
+    /// using a [`FontArc`](https://docs.rs/ab_glyph/latest/ab_glyph/struct.FontArc.html)
+    /// from [`ab_glyph`](https://docs.rs/ab_glyph).
+    /// Alternatively, pass a path to a .otf or .ttf
+    /// to load a font from a file using
+    /// `text_font_from_file` instead of `font`.
+    ///
+    /// ```
+    /// # use genji::{ecs::World, graphics::Position};
+    /// # struct FakeWorld;
+    /// # impl FakeWorld {
+    /// #   pub fn spawn<T>(&self, x: T) {}
+    /// # }
+    /// # let world = FakeWorld;
+    /// # mod sprite {
+    /// #   pub fn text(t: &str, f: (), fs: f32) -> () { () }
+    /// # }
+    /// # let font = ();
+    ///
+    /// world.spawn((
+    ///     sprite::text("", font.clone(), 12.0),
+    ///     Position(0, 0),
+    /// ));
+    /// ```
     #[derive(Debug, Clone)]
     pub struct Text {
         pub text: String,
         pub font: FontArc,
         pub font_size: f32,
-        // ex: SpriteData,
     }
 
+    /// A texture sprite.
+    ///
+    /// You may either pass static data to `texture`,
+    /// or pass a path to an image file to `texture_from_file`.
+    /// If using the former, you must pass an
+    /// [`ImageFormat`](https://docs.rs/image/latest/image/enum.ImageFormat.html)
+    /// (borrowed from [`image`](https://docs.rs/image/)).
+    ///
+    /// ```
+    /// # use genji::{ecs::World, graphics::{Position, sprite::ImageFormat}};
+    /// # struct FakeWorld;
+    /// # impl FakeWorld {
+    /// #   pub fn spawn<T>(&self, x: T) {}
+    /// # }
+    /// # let world = FakeWorld;
+    /// # mod sprite {
+    /// #   use genji::graphics::sprite::ImageFormat;
+    /// #   pub fn texture(d: (), f: ImageFormat, w: i32, h: i32) -> () { () }
+    /// # }
+    /// # let data = ();
+    ///
+    /// world.spawn((
+    ///     sprite::texture(data, ImageFormat::Png, 300, 300),
+    ///     Position(0, 0),
+    /// ));
+    /// ```
     #[derive(Debug, Clone)]
     pub struct Texture {
-        pub path: String,
         pub data: Vec<u8>,
         pub dimensions: (u32, u32),
         pub w: i32,
         pub h: i32,
-        // ex: SpriteData,
     }
-    // }
 
+    /// Creates a [`Rect`](../struct.Rect.html).
+    ///
+    /// ```
+    /// # use genji::prelude::*;
+    /// # struct FakeWorld;
+    /// # impl FakeWorld {
+    /// #   pub fn spawn<T>(&self, x: T) {}
+    /// # }
+    /// # let world = FakeWorld;
+    ///
+    /// world.spawn((
+    ///     sprite::rect(12, 34),
+    ///     Position(0, 0),
+    /// ));
+    /// ```
     pub fn rect(w: i32, h: i32) -> Rect {
         Rect { w, h }
     }
 
+    /// Creates a [`Circle`](../struct.Circle.html).
+    ///
+    /// ```
+    /// # use genji::prelude::*;
+    /// # struct FakeWorld;
+    /// # impl FakeWorld {
+    /// #   pub fn spawn<T>(&self, x: T) {}
+    /// # }
+    /// # let world = FakeWorld;
+    ///
+    /// world.spawn((
+    ///     sprite::circle(30),
+    ///     Position(0, 0),
+    /// ));
+    /// ```
     pub fn circle(r: i32) -> Circle {
         Circle { r }
     }
 
-    pub fn triangle(w: i32, h: i32) -> Triangle {
-        Triangle { w, h }
+    /// Creates a [`Triangle`](../struct.Triangle.html).
+    ///
+    /// ```
+    /// # use genji::prelude::*;
+    /// # struct FakeWorld;
+    /// # impl FakeWorld {
+    /// #   pub fn spawn<T>(&self, x: T) {}
+    /// # }
+    /// # let world = FakeWorld;
+    ///
+    /// world.spawn((
+    ///     sprite::triangle(
+    ///         12, // width of the base
+    ///         34, // height from base -> tip
+    ///         8,  // horizontal offset of tip
+    ///     ),
+    ///     Position(0, 0),
+    /// ));
+    /// ```
+    pub fn triangle(w: i32, h: i32, o: i32) -> Triangle {
+        Triangle { w, h, o }
     }
 
+    /// Creates a [`Text`](../struct.Text.html) from static data.
+    ///
+    /// A font must be passed at creation
+    /// using a [`FontArc`](https://docs.rs/ab_glyph/latest/ab_glyph/struct.FontArc.html)
+    /// from [`ab_glyph`](https://docs.rs/ab_glyph).
+    ///
+    /// ```
+    /// # use genji::{ecs::World, graphics::Position};
+    /// # struct FakeWorld;
+    /// # impl FakeWorld {
+    /// #   pub fn spawn<T>(&self, x: T) {}
+    /// # }
+    /// # let world = FakeWorld;
+    /// # mod sprite {
+    /// #   pub fn text(t: &str, f: (), fs: f32) -> () { () }
+    /// # }
+    /// # let font = ();
+    ///
+    /// world.spawn((
+    ///     sprite::text("", font.clone(), 12.0),
+    ///     Position(0, 0),
+    /// ));
+    /// ```
     pub fn text<S: ToString>(text: S, font_data: &'static [u8], font_size: f32) -> Option<Text> {
         let font = FontArc::try_from_slice(font_data).ok()?;
 
@@ -382,6 +615,27 @@ pub mod sprite {
         })
     }
 
+    /// Creates a [`Text`](../struct.Text.html) with a font file.
+    ///
+    /// The path must be to a valid .otf / .ttf file.
+    ///
+    /// ```
+    /// # use genji::{ecs::World, graphics::Position};
+    /// # struct FakeWorld;
+    /// # impl FakeWorld {
+    /// #   pub fn spawn<T>(&self, x: T) {}
+    /// # }
+    /// # let world = FakeWorld;
+    /// # mod sprite {
+    /// #   pub fn text(t: &str, f: (), fs: f32) -> () { () }
+    /// # }
+    /// # let font = ();
+    ///
+    /// world.spawn((
+    ///     sprite::text("", font.clone(), 12.0),
+    ///     Position(0, 0),
+    /// ));
+    /// ```
     pub fn text_font_from_file<S1: ToString, S2: ToString>(
         text: S1,
         font: S2,
@@ -400,35 +654,60 @@ pub mod sprite {
         })
     }
 
+    /// Creates a [`Texture`](../struct.Texture.html) from static data.
+    ///
+    /// You must pass an
+    /// [`ImageFormat`](https://docs.rs/image/latest/image/enum.ImageFormat.html)
+    /// (borrowed from [`image`](https://docs.rs/image/)).
+    ///
+    /// ```
+    /// # use genji::{ecs::World, graphics::{Position, sprite::ImageFormat}};
+    /// # struct FakeWorld;
+    /// # impl FakeWorld {
+    /// #   pub fn spawn<T>(&self, x: T) {}
+    /// # }
+    /// # let world = FakeWorld;
+    /// # mod sprite {
+    /// #   use genji::graphics::sprite::ImageFormat;
+    /// #   pub fn texture(d: (), f: ImageFormat, w: i32, h: i32) -> () { () }
+    /// # }
+    /// # let data = ();
+    ///
+    /// world.spawn((
+    ///     sprite::texture(data, ImageFormat::Png, 300, 300),
+    ///     Position(0, 0),
+    /// ));
+    /// ```
     pub fn texture<S, D>(
-        path: Option<S>,
         data: D,
-        fmt: Option<ImageFormat>,
-        w: i32,
-        h: i32,
+        fmt: ImageFormat,
+        w: Option<i32>,
+        h: Option<i32>,
     ) -> Option<Texture>
     where
         S: ToString,
         D: Into<Vec<u8>>,
     {
         let data = data.into();
-        let path = path.map(|s| s.to_string());
 
-        let data = image::load(
-            Cursor::new(data),
-            fmt.unwrap_or(image::ImageFormat::from_extension(
-                Path::new(path.as_ref()?)
-                    .extension()
-                    .map(|e| e.to_str().unwrap_or(""))?,
-            )?),
-        )
-        .ok()?
-        .to_rgba8();
+        let data = image::load(Cursor::new(data), fmt).ok()?.to_rgba8();
 
         let dimensions = data.dimensions();
 
+        let (w, h) = match (w, h) {
+            (None, None) => (dimensions.0 as i32, dimensions.1 as i32),
+            (None, Some(h)) => (
+                (dimensions.0 as f32 * (h as f32 / dimensions.1 as f32)).round() as i32,
+                h,
+            ),
+            (Some(w), None) => (
+                w,
+                (dimensions.1 as f32 * (w as f32 / dimensions.0 as f32)).round() as i32,
+            ),
+            (Some(w), Some(h)) => (w, h),
+        };
+
         Some(Texture {
-            path: path.unwrap_or_default(),
             data: data.into_raw(),
             dimensions,
             w,
@@ -436,7 +715,31 @@ pub mod sprite {
         })
     }
 
-    pub fn texture_from_file<S: ToString>(path: S, w: i32, h: i32) -> Option<Texture> {
+    /// Creates a [`Texture`](../struct.Texture.html) from an image file.
+    ///
+    /// ```
+    /// # use genji::{ecs::World, graphics::{Position, sprite::ImageFormat}};
+    /// # struct FakeWorld;
+    /// # impl FakeWorld {
+    /// #   pub fn spawn<T>(&self, x: T) {}
+    /// # }
+    /// # let world = FakeWorld;
+    /// # mod sprite {
+    /// #   use genji::graphics::sprite::ImageFormat;
+    /// #   pub fn texture(d: (), f: ImageFormat, w: i32, h: i32) -> () { () }
+    /// # }
+    /// # let data = ();
+    ///
+    /// world.spawn((
+    ///     sprite::texture(data, ImageFormat::Png, 300, 300),
+    ///     Position(0, 0),
+    /// ));
+    /// ```
+    pub fn texture_from_file<S: ToString>(
+        path: S,
+        w: Option<i32>,
+        h: Option<i32>,
+    ) -> Option<Texture> {
         let path = path.to_string();
         let data = image::load(
             BufReader::new(File::open(&path).ok()?),
@@ -451,8 +754,20 @@ pub mod sprite {
 
         let dimensions = data.dimensions();
 
+        let (w, h) = match (w, h) {
+            (None, None) => (dimensions.0 as i32, dimensions.1 as i32),
+            (None, Some(h)) => (
+                (dimensions.0 as f32 * (h as f32 / dimensions.1 as f32)).round() as i32,
+                h,
+            ),
+            (Some(w), None) => (
+                w,
+                (dimensions.1 as f32 * (w as f32 / dimensions.0 as f32)).round() as i32,
+            ),
+            (Some(w), Some(h)) => (w, h),
+        };
+
         Some(Texture {
-            path,
             data: data.into_raw(),
             dimensions,
             w,
@@ -504,25 +819,21 @@ pub mod sprite {
                 let vertices = [
                     Vertex {
                         position: [-w, h],
-                        normal: [0.0, 1.0],
                         tex_coords: [0.0, 1.0],
                         color,
                     },
                     Vertex {
                         position: [w, h],
-                        normal: [1.0, 1.0],
                         tex_coords: [1.0, 1.0],
                         color,
                     },
                     Vertex {
                         position: [-w, -h],
-                        normal: [0.0, 0.0],
                         tex_coords: [0.0, 0.0],
                         color,
                     },
                     Vertex {
                         position: [w, -h],
-                        normal: [1.0, 0.0],
                         tex_coords: [1.0, 0.0],
                         color,
                     },
@@ -533,31 +844,26 @@ pub mod sprite {
                 let vertices = [
                     Vertex {
                         position: [-w, h],
-                        normal: [0.0, 1.0],
                         tex_coords: [0.0, 1.0],
                         color,
                     },
                     Vertex {
                         position: [w, h],
-                        normal: [1.0, 1.0],
                         tex_coords: [1.0, 1.0],
                         color,
                     },
                     Vertex {
                         position: [w, -h],
-                        normal: [1.0, 0.0],
                         tex_coords: [1.0, 0.0],
                         color,
                     },
                     Vertex {
                         position: [-w, -h],
-                        normal: [0.0, 0.0],
                         tex_coords: [0.0, 0.0],
                         color,
                     },
                     Vertex {
                         position: [-w, h],
-                        normal: [0.0, 1.0],
                         tex_coords: [0.0, 1.0],
                         color,
                     },
@@ -621,10 +927,8 @@ pub mod sprite {
             let mut a = 0.0f32;
             while a <= 360.0 {
                 let pos = [r * a.cos(), r * a.sin()];
-                let sum = pos[0] + pos[1];
                 vertices.push(Vertex {
                     position: pos,
-                    normal: [pos[0] / sum, pos[1] / sum],
                     color,
                     tex_coords: [pos[0] + 0.5, pos[1] + 0.5],
                 });
@@ -632,7 +936,6 @@ pub mod sprite {
                 if ex.fill && a % 1.0 == 0.0 {
                     vertices.push(Vertex {
                         position: [0.0, 0.0],
-                        normal: [1.0, 0.0],
                         color,
                         tex_coords: [0.5, 0.5],
                     });
@@ -686,23 +989,21 @@ pub mod sprite {
 
             let w = gj2gl::coord(self.w) / 2.0;
             let h = gj2gl::coord(self.h) / 2.0;
+            let o = gj2gl::coord(self.o);
 
             let vertices = [
                 Vertex {
                     position: [-w, -h],
-                    normal: [-w, -h],
                     color,
                     tex_coords: [0.0, 0.0],
                 },
                 Vertex {
                     position: [w, -h],
-                    normal: [w, -h],
                     color,
                     tex_coords: [1.0, 0.0],
                 },
                 Vertex {
-                    position: [0.0, h],
-                    normal: [0.0, h],
+                    position: [o, h],
                     color,
                     tex_coords: [0.5, 1.0],
                 },
@@ -776,25 +1077,21 @@ pub mod sprite {
                 &[
                     Vertex {
                         position: [-w, h],
-                        normal: [0.0, 1.0],
                         tex_coords: [0.0, 1.0],
                         color,
                     },
                     Vertex {
                         position: [w, h],
-                        normal: [1.0, 1.0],
                         tex_coords: [1.0, 1.0],
                         color,
                     },
                     Vertex {
                         position: [-w, -h],
-                        normal: [0.0, 0.0],
                         tex_coords: [0.0, 0.0],
                         color,
                     },
                     Vertex {
                         position: [w, -h],
-                        normal: [1.0, 0.0],
                         tex_coords: [1.0, 0.0],
                         color,
                     },
@@ -863,25 +1160,21 @@ pub mod sprite {
                 let vertices = [
                     Vertex {
                         position: [-w, h],
-                        normal: [0.0, 1.0],
                         tex_coords: [0.0, 1.0],
                         color,
                     },
                     Vertex {
                         position: [w, h],
-                        normal: [1.0, 1.0],
                         tex_coords: [1.0, 1.0],
                         color,
                     },
                     Vertex {
                         position: [-w, -h],
-                        normal: [0.0, 0.0],
                         tex_coords: [0.0, 0.0],
                         color,
                     },
                     Vertex {
                         position: [w, -h],
-                        normal: [1.0, 0.0],
                         tex_coords: [1.0, 0.0],
                         color,
                     },
@@ -892,31 +1185,26 @@ pub mod sprite {
                 let vertices = [
                     Vertex {
                         position: [-w, h],
-                        normal: [0.0, 1.0],
                         tex_coords: [0.0, 1.0],
                         color,
                     },
                     Vertex {
                         position: [w, h],
-                        normal: [1.0, 1.0],
                         tex_coords: [1.0, 1.0],
                         color,
                     },
                     Vertex {
                         position: [w, -h],
-                        normal: [1.0, 0.0],
                         tex_coords: [1.0, 0.0],
                         color,
                     },
                     Vertex {
                         position: [-w, -h],
-                        normal: [0.0, 0.0],
                         tex_coords: [0.0, 0.0],
                         color,
                     },
                     Vertex {
                         position: [-w, h],
-                        normal: [0.0, 1.0],
                         tex_coords: [0.0, 1.0],
                         color,
                     },

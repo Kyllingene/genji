@@ -1,12 +1,59 @@
-// use std::collections::HashMap;
+//! `GameState` holds the generic state for the game.
+//! This can be thought of roughly as your window.
+//!
+//! ```
+//! # use genji::prelude::*;
+//!
+//! let mut state = GameState::new(
+//!     (),              // (your custom) state
+//!     "Hello, World!", // title
+//!     Some(640),       // width
+//!     Some(480),       // height
+//!     Some(30),        // fps
+//!                      // clear color
+//!     Some(Color::new(12, 34, 56, 255)),
+//! );
+//!
+//! state.close_on_request = false;
+//!
+//! // ...snip: in onloop
+//! # fn dummy(state: GameState<()>) -> bool {
+//! if state.asked_to_close {
+//!     return true;
+//! }
+//! # false
+//! # }
+//! ```
 
-// use once_cell::sync::Lazy;
-
-// use crate::graphics::{Color, Sprite};
 use crate::graphics::Color;
-use crate::input::{self, Keys};
-// use crate::helpers::hash;
+use crate::input::Keys;
 
+/// Holds the generic state for the game. This
+/// can be thought of roughly as your window.
+///
+/// ```
+/// # use genji::prelude::*;
+///
+/// let mut state = GameState::new(
+///     (),              // (your custom) state
+///     "Hello, World!", // title
+///     Some(640),       // width
+///     Some(480),       // height
+///     Some(30),        // fps
+///                      // clear color
+///     Some(Color::new(12, 34, 56, 255)),
+/// );
+///
+/// state.close_on_request = false;
+///
+/// // ...snip: in onloop
+/// # fn dummy(state: GameState<()>) -> bool {
+/// if state.asked_to_close {
+///     return true;
+/// }
+/// # false
+/// # }
+/// ```
 #[derive(Debug, Clone)]
 pub struct GameState<T> {
     pub title: String,
@@ -24,20 +71,22 @@ pub struct GameState<T> {
     pub mouse_x: i32,
     pub mouse_y: i32,
 
-    /// The change in the scroll wheel this frame.
+    /// The change in the scroll wheel this frame, in coordinates.
     pub scroll: i32,
 
     /// Whether or not genji closes when the OS asks it to.
+    /// Defaults to true.
     pub close_on_request: bool,
-    /// When `!close_on_request`, if genji has been asked to close.
+    /// If genji has been asked to close by the OS. If `close_on_request`,
+    /// this should never be true.
     pub asked_to_close: bool,
 }
 
 impl<T> GameState<T> {
     /// Initiates genji's game state. Creates a new window.
     ///
-    /// `width` and `height` may be None, defaulting to 640 and 480 respectively.
-    /// `fps` defaults to 100.
+    /// `width` and `height` may be None, defaulting to 640
+    /// and 480 respectively. `fps` defaults to 100.
     ///
     /// If `clear_color` is None, the screen is never cleared.
     pub fn new<S: ToString>(
@@ -62,7 +111,7 @@ impl<T> GameState<T> {
 
             state,
             // sprites: HashMap::new(),
-            keys: input::keys(),
+            keys: Keys::new(),
 
             fps: 1000 / fps,
             delta: 0,

@@ -21,7 +21,7 @@ Bundles and spritemaps are parts of an ideal future, but it may not come to frui
 
 ## Example usage
 
-```rust
+```ignore
 use genji::prelude::*;
 
 // This line injects the genji code that runs your game.

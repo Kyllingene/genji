@@ -1,3 +1,5 @@
+//! The things you're most likely to need when using Genji.
+
 /// Includes a file as a byte slice. Equivalent to
 /// `const _: &[u8] = include_bytes!(_);`.
 ///
@@ -33,7 +35,7 @@ macro_rules! use_files {
 }
 
 pub use crate::{
-    ecs::{World, Entity},
+    ecs::{Entity, World},
     graphics::{sprite, Angle, Color, Depth, Fill, Position, StrokeWeight},
     input::Key,
     state::GameState,

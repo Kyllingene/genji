@@ -1,10 +1,57 @@
+//! Keyboard input.
+//!
+//! Genji uses an array of booleans to store key state,
+//! and exposes that through a wrapper struct to make
+//! indexing more convenient. Both keyboard keys and
+//! mouse buttons are stored in the same
+//! [`Key`](../enum.Key.html) enum.
+//!
+//! ```
+//! # use genji::input::{Key, Keys};
+//!
+//! let mut keys = Keys::new();
+//!
+//! assert!(!keys[Key::Space]);
+//!
+//! # keys[Key::Space] = true;
+//! // You press the spacebar...
+//! assert!(keys[Key::Space]);
+//! ```
+
 use std::ops::{Add, Index, IndexMut, Sub};
 
 use glium::glutin::event::VirtualKeyCode;
 
+const KEYS_NUM: usize = 87;
+
 /// A set of keys. Get a keys state with `keys[key]`.
+///
+/// ```
+/// # use genji::input::{Key, Keys};
+///
+/// let mut keys = Keys::new();
+///
+/// assert!(!keys[Key::Space]);
+///
+/// # keys[Key::Space] = true;
+/// // You press the spacebar...
+/// assert!(keys[Key::Space]);
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Keys([bool; 87]);
+pub struct Keys([bool; KEYS_NUM]);
+
+impl Keys {
+    #[inline]
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Default for Keys {
+    fn default() -> Self {
+        Self([false; KEYS_NUM])
+    }
+}
 
 impl Index<Key> for Keys {
     type Output = bool;
@@ -34,11 +81,19 @@ impl<T: Into<usize>> IndexMut<T> for Keys {
     }
 }
 
-pub fn keys() -> Keys {
-    Keys([false; 87])
-}
-
 /// A key. Corresponds to a number (0-86).
+///
+/// ```
+/// # use genji::input::{Key, Keys};
+///
+/// let mut keys = Keys::new();
+///
+/// assert!(!keys[Key::Space]);
+///
+/// # keys[Key::Space] = true;
+/// // You press the spacebar...
+/// assert!(keys[Key::Space]);
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(usize)]
 pub enum Key {
