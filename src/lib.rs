@@ -14,6 +14,7 @@ pub mod graphics;
 pub mod input;
 pub mod prelude;
 pub mod state;
+pub mod store;
 
 use input::{Key, Keys};
 

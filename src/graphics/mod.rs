@@ -1,18 +1,18 @@
 //! Utilities for drawing things to the screen.
-//! 
+//!
 //! In genji, sprites are components that can optionally
 //! have other components attached to add information. The
 //! exception is [`Position`],
 //! which must be specified or the sprite will not be drawn.
 //! All the others have default values.
-//! 
+//!
 //! The following sprites are available as components:
 //! [`Rect`](sprite::Rect),
 //! [`Circle`](sprite::Circle),
 //! [`Triangle`](sprite::Triangle),
 //! [`Text`](sprite::Text),
 //! and [`Texture`](sprite::Texture).
-//! 
+//!
 //! Data can be attached to sprites via several components:
 //! [`Angle`],
 //! [`Color`],
@@ -31,7 +31,7 @@ use shaders::Shaders;
 mod text;
 
 /// An RGBA color in byte format.
-/// 
+///
 /// Defaults to opaque white.
 ///
 /// ```
@@ -354,7 +354,7 @@ impl Default for SpriteData {
 pub mod sprite {
     //! The module containing the sprite types and their
     //! constructors.
-    //! 
+    //!
     //! The following sprites are available as components:
     //! [`Rect`],
     //! [`Circle`],
@@ -683,12 +683,7 @@ pub mod sprite {
     ///     Position(0, 0),
     /// ));
     /// ```
-    pub fn texture<D>(
-        data: D,
-        fmt: ImageFormat,
-        w: Option<i32>,
-        h: Option<i32>,
-    ) -> Option<Texture>
+    pub fn texture<D>(data: D, fmt: ImageFormat, w: Option<i32>, h: Option<i32>) -> Option<Texture>
     where
         D: Into<Vec<u8>>,
     {
