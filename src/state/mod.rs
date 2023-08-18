@@ -138,15 +138,15 @@ impl<T> GameState<T> {
 }
 
 impl<T> Deref for GameState<T> {
-	type Target = T;
+    type Target = T;
 
-	fn deref(&self) -> &Self::Target {
-		&self.state
-	}
+    fn deref(&self) -> &Self::Target {
+        &self.state
+    }
 }
 
 impl<T> DerefMut for GameState<T> {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.state
-	}
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.state
+    }
 }

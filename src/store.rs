@@ -81,7 +81,7 @@ impl<T: Clone> DerefMut for Store<T> {
     }
 }
 
-impl<S: Clone> Default for Store<S> {
+impl<T: Clone> Default for Store<T> {
     fn default() -> Self {
         Self::new()
     }

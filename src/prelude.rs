@@ -39,6 +39,7 @@ pub use crate::{
     ecs::{Entity, World},
     graphics::{
         sprite::{self, ImageFormat},
+        spritemap::Spritemap,
         Angle, Color, Depth, Fill, StrokeWeight,
     },
     input::Key,

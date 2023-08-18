@@ -71,17 +71,7 @@ pub(crate) fn render_glyphs(
     for glyph in glyphs {
         if let Some(outlined) = scaled_font.outline_glyph(glyph) {
             let bounds = outlined.px_bounds();
-            // Draw the glyph into the image per-pixel by using the draw closure
             outlined.draw(|x, y, v| {
-                // Offset the position by the glyph bounding box
-                // let px = image.get_pixel_mut(x + bounds.min.x as u32, y + bounds.min.y as u32);
-                // // Turn the coverage into an alpha value (blended with any previous)
-                // *px = Rgba([
-                //     colour.0,
-                //     colour.1,
-                //     colour.2,
-                //     px.0[3].saturating_add((v * 255.0) as u8),
-                // ]);
                 buf[y as usize + bounds.min.y as usize][x as usize + bounds.min.x as usize] = (
                     ex.color.r,
                     ex.color.g,
