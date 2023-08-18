@@ -25,6 +25,8 @@
 //! # }
 //! ```
 
+use std::ops::{Deref, DerefMut};
+
 use crate::ecs::EntityStore;
 use crate::graphics::Color;
 use crate::input::Keys;
@@ -133,4 +135,18 @@ impl<T> GameState<T> {
             asked_to_close: false,
         }
     }
+}
+
+impl<T> Deref for GameState<T> {
+	type Target = T;
+
+	fn deref(&self) -> &Self::Target {
+		&self.state
+	}
+}
+
+impl<T> DerefMut for GameState<T> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.state
+	}
 }
