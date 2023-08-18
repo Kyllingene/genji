@@ -42,7 +42,7 @@ pub use crate::{
         Angle, Color, Depth, Fill, StrokeWeight,
     },
     input::Key,
-    shape::{Circle, Contains, Point, Rect, Triangle},
+    shape::{self, Circle, Contains, Point, Rect, Triangle},
     state::GameState,
     use_file, use_files,
 };
