@@ -39,9 +39,10 @@ pub use crate::{
     ecs::{Entity, World},
     graphics::{
         sprite::{self, ImageFormat},
-        Angle, Color, Depth, Fill, Position, StrokeWeight,
+        Angle, Color, Depth, Fill, StrokeWeight,
     },
     input::Key,
+    shape::{Circle, Contains, Point, Rect, Triangle},
     state::GameState,
     use_file, use_files,
 };

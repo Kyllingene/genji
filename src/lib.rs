@@ -13,6 +13,7 @@ pub mod ecs;
 pub mod graphics;
 pub mod input;
 pub mod prelude;
+pub mod shape;
 pub mod state;
 pub mod store;
 
@@ -21,9 +22,10 @@ use input::{Key, Keys};
 use ecs::World;
 use glium::{glutin, Surface};
 use graphics::{
-    sprite::{Circle, Rect, Text, Texture, Triangle},
-    Angle, Color, Depth, Fill, Position, Sprite, SpriteData, StrokeWeight,
+    sprite::{Sprite, SpriteData, Text, Texture},
+    Angle, Color, Depth, Fill, StrokeWeight,
 };
+use shape::{Circle, Point, Rect, Triangle};
 use state::GameState;
 
 mod helpers;
@@ -170,7 +172,7 @@ pub fn main<T: 'static>(
                 let mut sorted = Vec::new();
                 macro_rules! draw_sprites {
                     ( $( $sprite_type:ident ),* ) => {$(
-                        let mut query = world_ref.query::<(&$sprite_type, &Position)>();
+                        let mut query = world_ref.query::<(&$sprite_type, &Point)>();
                         for (id, (sprite, pos)) in query.iter() {
                             let mut ex = SpriteData::new();
                             ex.x = pos.0;

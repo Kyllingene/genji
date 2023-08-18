@@ -1,6 +1,6 @@
 use ab_glyph::{point, Font, FontArc, Glyph, Point, PxScale, ScaleFont};
 
-use super::SpriteData;
+use super::sprite::SpriteData;
 
 type Pixel = (u8, u8, u8, u8);
 

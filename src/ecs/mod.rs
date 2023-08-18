@@ -3,7 +3,7 @@
 //! Genji uses the excellent [hecs]
 //! ECS crate, with no real modifications. However, an
 //! [`EntityStore`] struct is provided
-//! to give ID's to entities.
+//! to give convenient ID's to entities.
 
 pub use hecs::*;
 

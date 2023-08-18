@@ -39,7 +39,7 @@ fn init() -> (State, World) {
     // Genji uses an ECS called [hecs](https://docs.rs/hecs/0.10.3/hecs/index.html).
     // This tuple is an entity in your game, and it has certain bits of functionality.
     // Note that when you omit details from a sprite (such as rotation), they use
-    // default values. Position is the exception: no sprite without a Position is drawn.
+    // default values. Point is the exception: no sprite without a Point is drawn.
     // These can be in any order.
     let circle = (
         sprite::circle(20),
@@ -49,7 +49,7 @@ fn init() -> (State, World) {
         // the vertical dimension, coordinates are always -400 to 400. However,
         // horizontal coordinates can go higher if the window is wider than it
         // is high.
-        Position(20, 20),
+        Point(20, 20),
         Depth(5),
     );
 
@@ -83,7 +83,7 @@ fn onloop(state: &mut State, world: &mut World) -> bool {
     }
 
     if let Ok((circle, position, fill)) =
-        world.query_one_mut::<(&mut sprite::Circle, &mut Position, &mut Fill)>(state.state)
+        world.query_one_mut::<(&mut sprite::Circle, &mut Point, &mut Fill)>(state.state)
     {
         position.0 = state.mouse_x;
         position.1 = state.mouse_y;

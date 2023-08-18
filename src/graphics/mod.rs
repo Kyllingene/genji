@@ -2,14 +2,14 @@
 //!
 //! In genji, sprites are components that can optionally
 //! have other components attached to add information. The
-//! exception is [`Position`],
+//! exception is [`Point`](crate::shape::Point),
 //! which must be specified or the sprite will not be drawn.
 //! All the others have default values.
 //!
 //! The following sprites are available as components:
-//! [`Rect`](sprite::Rect),
-//! [`Circle`](sprite::Circle),
-//! [`Triangle`](sprite::Triangle),
+//! [`Rect`](crate::shape::Rect),
+//! [`Circle`](crate::shape::Circle),
+//! [`Triangle`](crate::shape::Triangle),
 //! [`Text`](sprite::Text),
 //! and [`Texture`](sprite::Texture).
 //!
@@ -18,16 +18,12 @@
 //! [`Color`],
 //! [`Depth`],
 //! [`Fill`],
-//! [`Position`],
+//! [`Point`](crate::shape::Point),
 //! [`StrokeWeight`].
 
 use std::ops::{Deref, DerefMut};
 
-use glium::{Display, Frame};
-
 pub(crate) mod shaders;
-use shaders::Shaders;
-
 mod text;
 
 /// An RGBA color in byte format.
@@ -120,25 +116,6 @@ impl Default for Color {
         }
     }
 }
-
-/// A position to apply to a sprite.
-///
-/// ```
-/// # use genji::prelude::*;
-/// # struct FakeWorld;
-/// # impl FakeWorld {
-/// #   pub fn spawn<T>(&self, x: T) {}
-/// # }
-/// # let world = FakeWorld;
-/// # fn some_sprite() -> () { () }
-///
-/// world.spawn((
-///     some_sprite(),
-///     Position(25, 25),
-/// ));
-/// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Position(pub i32, pub i32);
 
 /// A sprites depth. `0` hides the sprite.
 ///
@@ -281,76 +258,6 @@ impl DerefMut for StrokeWeight {
     }
 }
 
-/// Used to sort sprites before rendering.
-pub(crate) enum Sprite<'a> {
-    Rect(&'a sprite::Rect),
-    Circle(&'a sprite::Circle),
-    Triangle(&'a sprite::Triangle),
-    Text(&'a sprite::Text),
-    Texture(&'a sprite::Texture),
-}
-
-impl<'a> Sprite<'a> {
-    pub(crate) fn draw(&self, target: &mut Frame, ex: SpriteData, d: &Display, shaders: &Shaders) {
-        match self {
-            Self::Rect(sprite) => sprite.draw(target, ex, d, shaders),
-            Self::Circle(sprite) => sprite.draw(target, ex, d, shaders),
-            Self::Triangle(sprite) => sprite.draw(target, ex, d, shaders),
-            Self::Text(sprite) => sprite.draw(target, ex, d, shaders),
-            Self::Texture(sprite) => sprite.draw(target, ex, d, shaders),
-        }
-    }
-}
-
-/// The data required to draw a sprite.
-#[derive(Debug, Clone, Copy)]
-pub(crate) struct SpriteData {
-    /// The horizontal position of the sprite.
-    /// Defaults to `0`.
-    pub x: i32,
-    /// The vertical position of the sprite.
-    /// Defaults to `0`.
-    pub y: i32,
-    /// The z-level of the sprite. `0` hides it.
-    /// Defaults to `1`.
-    pub depth: u32,
-    /// The rotation of the sprite, in degrees.
-    /// Defaults to `0.0`.
-    pub angle: f32,
-    /// Whether or not to fill the sprite (only for shapes).
-    /// Defaults to `true`.
-    pub fill: bool,
-    /// The weight of the lines if `!fill` (only for shapes).
-    /// Defaults to `4`.
-    pub stroke_weight: u32,
-    /// The color of the sprite (for sprites, offsets the color).
-    /// Defaults to opaque white.
-    pub color: Color,
-}
-
-impl SpriteData {
-    /// Creates a new sprite with default values.
-    /// See each property to see defaults.
-    #[inline]
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
-impl Default for SpriteData {
-    fn default() -> Self {
-        Self {
-            x: 0,
-            y: 0,
-            depth: 1,
-            fill: true,
-            angle: 0.0,
-            stroke_weight: 4,
-            color: Color::default(),
-        }
-    }
-}
-
 pub mod sprite {
     //! The module containing the sprite types and their
     //! constructors.
@@ -370,9 +277,11 @@ pub mod sprite {
         path::Path,
     };
 
-    use super::text;
-    use super::{shaders, SpriteData};
-    use crate::helpers::gj2gl;
+    use super::{shaders, text, Color};
+    use crate::{
+        helpers::gj2gl,
+        shape::{Circle, Rect, Triangle},
+    };
 
     use ab_glyph::FontArc;
     use shaders::Shaders;
@@ -395,71 +304,80 @@ pub mod sprite {
 
     implement_vertex!(Vertex, position, color, tex_coords);
 
-    /// A rectangle sprite.
-    ///
-    /// ```
-    /// # use genji::prelude::*;
-    /// # struct FakeWorld;
-    /// # impl FakeWorld {
-    /// #   pub fn spawn<T>(&self, x: T) {}
-    /// # }
-    /// # let world = FakeWorld;
-    ///
-    /// world.spawn((
-    ///     sprite::rect(12, 34),
-    ///     Position(0, 0),
-    /// ));
-    /// ```
-    #[derive(Debug, Clone, Copy)]
-    pub struct Rect {
-        pub w: i32,
-        pub h: i32,
+    /// Used to sort sprites before rendering.
+    pub(crate) enum Sprite<'a> {
+        Rect(&'a Rect),
+        Circle(&'a Circle),
+        Triangle(&'a Triangle),
+        Text(&'a Text),
+        Texture(&'a Texture),
     }
 
-    /// A circle sprite.
-    ///
-    /// ```
-    /// # use genji::prelude::*;
-    /// # struct FakeWorld;
-    /// # impl FakeWorld {
-    /// #   pub fn spawn<T>(&self, x: T) {}
-    /// # }
-    /// # let world = FakeWorld;
-    ///
-    /// world.spawn((
-    ///     sprite::circle(30),
-    ///     Position(0, 0),
-    /// ));
-    /// ```
-    #[derive(Debug, Clone, Copy)]
-    pub struct Circle {
-        pub r: i32,
+    impl<'a> Sprite<'a> {
+        pub(crate) fn draw(
+            &self,
+            target: &mut Frame,
+            ex: SpriteData,
+            d: &Display,
+            shaders: &Shaders,
+        ) {
+            match self {
+                Self::Rect(sprite) => sprite.draw(target, ex, d, shaders),
+                Self::Circle(sprite) => sprite.draw(target, ex, d, shaders),
+                Self::Triangle(sprite) => sprite.draw(target, ex, d, shaders),
+                Self::Text(sprite) => sprite.draw(target, ex, d, shaders),
+                Self::Texture(sprite) => sprite.draw(target, ex, d, shaders),
+            }
+        }
     }
 
-    /// A triangle sprite.
-    ///
-    /// ```
-    /// # use genji::prelude::*;
-    /// # struct FakeWorld;
-    /// # impl FakeWorld {
-    /// #   pub fn spawn<T>(&self, x: T) {}
-    /// # }
-    /// # let world = FakeWorld;
-    ///
-    /// world.spawn((
-    ///     sprite::triangle(
-    ///         12, // width of the base
-    ///         34, // height from base -> tip
-    ///         8,  // horizontal offset of tip
-    ///     ),
-    ///     Position(0, 0),
-    /// ));
-    /// ```
+    /// The data required to draw a sprite.
     #[derive(Debug, Clone, Copy)]
-    pub struct Triangle {
-        pub w: i32,
-        pub h: i32,
-        pub o: i32,
+    pub(crate) struct SpriteData {
+        /// The horizontal position of the sprite.
+        /// Defaults to `0`.
+        pub x: i32,
+        /// The vertical position of the sprite.
+        /// Defaults to `0`.
+        pub y: i32,
+        /// The z-level of the sprite. `0` hides it.
+        /// Defaults to `1`.
+        pub depth: u32,
+        /// The rotation of the sprite, in degrees.
+        /// Defaults to `0.0`.
+        pub angle: f32,
+        /// Whether or not to fill the sprite (only for shapes).
+        /// Defaults to `true`.
+        pub fill: bool,
+        /// The weight of the lines if `!fill` (only for shapes).
+        /// Defaults to `4`.
+        pub stroke_weight: u32,
+        /// The color of the sprite (for sprites, offsets the color).
+        /// Defaults to opaque white.
+        pub color: Color,
+    }
+
+    impl SpriteData {
+        /// Creates a new sprite with default values.
+        /// See each property to see defaults.
+        #[inline]
+        pub fn new() -> Self {
+            Self::default()
+        }
+    }
+
+    impl Default for SpriteData {
+        fn default() -> Self {
+            Self {
+                x: 0,
+                y: 0,
+                depth: 1,
+                fill: true,
+                angle: 0.0,
+                stroke_weight: 4,
+                color: Color::default(),
+            }
+        }
     }
 
     /// A text sprite.
@@ -472,7 +390,7 @@ pub mod sprite {
     /// `text_font_from_file` instead of `font`.
     ///
     /// ```
-    /// # use genji::{ecs::World, graphics::Position};
+    /// # use genji::{ecs::World, graphics::Point};
     /// # struct FakeWorld;
     /// # impl FakeWorld {
     /// #   pub fn spawn<T>(&self, x: T) {}
@@ -485,7 +403,7 @@ pub mod sprite {
     ///
     /// world.spawn((
     ///     sprite::text("", font.clone(), 12.0),
-    ///     Position(0, 0),
+    ///     Point(0, 0),
     /// ));
     /// ```
     #[derive(Debug, Clone)]
@@ -503,7 +421,7 @@ pub mod sprite {
     /// (borrowed from [`image`]).
     ///
     /// ```
-    /// # use genji::{ecs::World, graphics::{Position, sprite::ImageFormat}};
+    /// # use genji::{ecs::World, graphics::{Point, sprite::ImageFormat}};
     /// # struct FakeWorld;
     /// # impl FakeWorld {
     /// #   pub fn spawn<T>(&self, x: T) {}
@@ -517,7 +435,7 @@ pub mod sprite {
     ///
     /// world.spawn((
     ///     sprite::texture(data, ImageFormat::Png, 300, 300),
-    ///     Position(0, 0),
+    ///     Point(0, 0),
     /// ));
     /// ```
     #[derive(Debug, Clone)]
@@ -528,74 +446,13 @@ pub mod sprite {
         pub h: i32,
     }
 
-    /// Creates a [`Rect`].
-    ///
-    /// ```
-    /// # use genji::prelude::*;
-    /// # struct FakeWorld;
-    /// # impl FakeWorld {
-    /// #   pub fn spawn<T>(&self, x: T) {}
-    /// # }
-    /// # let world = FakeWorld;
-    ///
-    /// world.spawn((
-    ///     sprite::rect(12, 34),
-    ///     Position(0, 0),
-    /// ));
-    /// ```
-    pub fn rect(w: i32, h: i32) -> Rect {
-        Rect { w, h }
-    }
-
-    /// Creates a [`Circle`].
-    ///
-    /// ```
-    /// # use genji::prelude::*;
-    /// # struct FakeWorld;
-    /// # impl FakeWorld {
-    /// #   pub fn spawn<T>(&self, x: T) {}
-    /// # }
-    /// # let world = FakeWorld;
-    ///
-    /// world.spawn((
-    ///     sprite::circle(30),
-    ///     Position(0, 0),
-    /// ));
-    /// ```
-    pub fn circle(r: i32) -> Circle {
-        Circle { r }
-    }
-
-    /// Creates a [`Triangle`].
-    ///
-    /// ```
-    /// # use genji::prelude::*;
-    /// # struct FakeWorld;
-    /// # impl FakeWorld {
-    /// #   pub fn spawn<T>(&self, x: T) {}
-    /// # }
-    /// # let world = FakeWorld;
-    ///
-    /// world.spawn((
-    ///     sprite::triangle(
-    ///         12, // width of the base
-    ///         34, // height from base -> tip
-    ///         8,  // horizontal offset of tip
-    ///     ),
-    ///     Position(0, 0),
-    /// ));
-    /// ```
-    pub fn triangle(w: i32, h: i32, o: i32) -> Triangle {
-        Triangle { w, h, o }
-    }
-
     /// Creates a [`Text`] from static data.
     ///
     /// A font must be passed at creation using a [`FontArc`]
     /// from [`ab_glyph`].
     ///
     /// ```
-    /// # use genji::{ecs::World, graphics::Position};
+    /// # use genji::{ecs::World, graphics::Point};
     /// # struct FakeWorld;
     /// # impl FakeWorld {
     /// #   pub fn spawn<T>(&self, x: T) {}
@@ -608,7 +465,7 @@ pub mod sprite {
     ///
     /// world.spawn((
     ///     sprite::text("", font.clone(), 12.0),
-    ///     Position(0, 0),
+    ///     Point(0, 0),
     /// ));
     /// ```
     pub fn text<S: ToString>(text: S, font_data: &'static [u8], font_size: f32) -> Option<Text> {
@@ -626,7 +483,7 @@ pub mod sprite {
     /// The path must be to a valid .otf / .ttf file.
     ///
     /// ```
-    /// # use genji::{ecs::World, graphics::Position};
+    /// # use genji::{ecs::World, graphics::Point};
     /// # struct FakeWorld;
     /// # impl FakeWorld {
     /// #   pub fn spawn<T>(&self, x: T) {}
@@ -639,7 +496,7 @@ pub mod sprite {
     ///
     /// world.spawn((
     ///     sprite::text("", font.clone(), 12.0),
-    ///     Position(0, 0),
+    ///     Point(0, 0),
     /// ));
     /// ```
     pub fn text_font_from_file<S1: ToString, S2: ToString>(
@@ -666,7 +523,7 @@ pub mod sprite {
     /// (borrowed from [`image`]).
     ///
     /// ```
-    /// # use genji::{ecs::World, graphics::{Position, sprite::ImageFormat}};
+    /// # use genji::{ecs::World, graphics::{Point, sprite::ImageFormat}};
     /// # struct FakeWorld;
     /// # impl FakeWorld {
     /// #   pub fn spawn<T>(&self, x: T) {}
@@ -680,7 +537,7 @@ pub mod sprite {
     ///
     /// world.spawn((
     ///     sprite::texture(data, ImageFormat::Png, 300, 300),
-    ///     Position(0, 0),
+    ///     Point(0, 0),
     /// ));
     /// ```
     pub fn texture<D>(data: D, fmt: ImageFormat, w: Option<i32>, h: Option<i32>) -> Option<Texture>
@@ -717,7 +574,7 @@ pub mod sprite {
     /// Creates a [`Texture`] from an image file.
     ///
     /// ```
-    /// # use genji::{ecs::World, graphics::{Position, sprite::ImageFormat}};
+    /// # use genji::{ecs::World, graphics::{Point, sprite::ImageFormat}};
     /// # struct FakeWorld;
     /// # impl FakeWorld {
     /// #   pub fn spawn<T>(&self, x: T) {}
@@ -731,7 +588,7 @@ pub mod sprite {
     ///
     /// world.spawn((
     ///     sprite::texture(data, ImageFormat::Png, 300, 300),
-    ///     Position(0, 0),
+    ///     Point(0, 0),
     /// ));
     /// ```
     pub fn texture_from_file<S: ToString>(
@@ -774,14 +631,12 @@ pub mod sprite {
         })
     }
 
-    impl Rect {
-        pub(crate) fn draw(
-            &self,
-            target: &mut Frame,
-            ex: SpriteData,
-            d: &Display,
-            shaders: &Shaders,
-        ) {
+    pub(crate) trait DrawSprite {
+        fn draw(&self, target: &mut Frame, ex: SpriteData, d: &Display, shaders: &Shaders);
+    }
+
+    impl DrawSprite for Rect {
+        fn draw(&self, target: &mut Frame, ex: SpriteData, d: &Display, shaders: &Shaders) {
             let mut params = glium::DrawParameters {
                 blend: Blend::alpha_blending(),
                 ..Default::default()
@@ -883,14 +738,8 @@ pub mod sprite {
         }
     }
 
-    impl Circle {
-        pub(crate) fn draw(
-            &self,
-            target: &mut Frame,
-            ex: SpriteData,
-            d: &Display,
-            shaders: &Shaders,
-        ) {
+    impl DrawSprite for Circle {
+        fn draw(&self, target: &mut Frame, ex: SpriteData, d: &Display, shaders: &Shaders) {
             let mut params = glium::DrawParameters {
                 blend: Blend::alpha_blending(),
                 ..Default::default()
@@ -957,14 +806,8 @@ pub mod sprite {
         }
     }
 
-    impl Triangle {
-        pub(crate) fn draw(
-            &self,
-            target: &mut Frame,
-            ex: SpriteData,
-            d: &Display,
-            shaders: &Shaders,
-        ) {
+    impl DrawSprite for Triangle {
+        fn draw(&self, target: &mut Frame, ex: SpriteData, d: &Display, shaders: &Shaders) {
             let params = glium::DrawParameters {
                 blend: Blend::alpha_blending(),
                 ..Default::default()
@@ -1021,14 +864,8 @@ pub mod sprite {
         }
     }
 
-    impl Text {
-        pub(crate) fn draw(
-            &self,
-            target: &mut Frame,
-            ex: SpriteData,
-            d: &Display,
-            shaders: &Shaders,
-        ) {
+    impl DrawSprite for Text {
+        fn draw(&self, target: &mut Frame, ex: SpriteData, d: &Display, shaders: &Shaders) {
             let mut params = glium::DrawParameters {
                 blend: Blend::alpha_blending(),
                 ..Default::default()
@@ -1115,14 +952,8 @@ pub mod sprite {
         }
     }
 
-    impl Texture {
-        pub(crate) fn draw(
-            &self,
-            target: &mut Frame,
-            ex: SpriteData,
-            d: &Display,
-            shaders: &Shaders,
-        ) {
+    impl DrawSprite for Texture {
+        fn draw(&self, target: &mut Frame, ex: SpriteData, d: &Display, shaders: &Shaders) {
             let mut params = glium::DrawParameters {
                 blend: Blend::alpha_blending(),
                 ..Default::default()

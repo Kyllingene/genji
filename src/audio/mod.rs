@@ -1,7 +1,13 @@
 //! Tools for loading, managing, and playing audio.
 //!
-//! Genji uses [`kira`] for managing
-//! audio.
+//! The [`Audio::sound`] and [`Audio::music`] associated
+//! functions create [`Sound`]s and [`Music`]s respectively.
+//! These can be stored in [`SoundStore`]s and [`MusicStore`]s
+//! to conveniently attach audio to an entity, or otherwise manage
+//! it.
+//!
+//! Genji uses [`kira`] for managing audio, and re-exports the
+//! crate for convenience.
 //!
 //! ```ignore
 //! # use genji::prelude::*;
@@ -39,11 +45,11 @@ use kira::{
 };
 
 pub use kira::{
+    self,
     sound::{
         static_sound::{StaticSoundData as Sound, StaticSoundSettings as SoundSettings},
         streaming::StreamingSoundSettings as MusicSettings,
     },
-    *,
 };
 
 use crate::store::Store;
