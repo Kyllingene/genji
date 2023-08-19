@@ -1,4 +1,16 @@
 //! Utilities for loading and using spritemaps.
+//! 
+//! Spritemaps reduce the amount of space and resources
+//! required to use a large amount of sprites, and give
+//! a convenient holding place for them.
+//! 
+//! Spritemaps require a default sprite width and
+//! height, for the sake of [`Spritemap::get_id`]; however,
+//! you can retrieve arbitrarily placed and sized 
+//! sprites via [`Spritemap::get_rect`].
+//! 
+//! Note that retrieving a sprite from a spritemap clones
+//! the sprite data, it doesn't reference it.
 
 use std::fs::File;
 use std::io::{BufReader, Cursor};
@@ -8,6 +20,12 @@ use image::RgbaImage;
 
 use super::sprite::{self, ImageFormat};
 
+/// A texture with utilities for retrieving sprites.
+/// 
+/// Spritemaps require a default sprite width and
+/// height, for the sake of [`Spritemap::get_id`]; however,
+/// you can retrieve arbitrarily placed and sized 
+/// sprites via [`Spritemap::get_rect`].
 pub struct Spritemap {
     tex: RgbaImage,
 
@@ -81,6 +99,7 @@ impl Spritemap {
         })
     }
 
+    // TODO: can this be improved?
     fn sample_rect(&self, x: u32, y: u32, w: u32, h: u32) -> Vec<u8> {
         let mut samples = Vec::new();
         for yy in y..(y + h) {
@@ -97,7 +116,8 @@ impl Spritemap {
         pb.into_iter().flatten().collect()
     }
 
-    pub fn get(&self, id: u32, w: Option<i32>, h: Option<i32>) -> Option<sprite::Texture> {
+    /// Get a sprite using the preset width and height options.
+    pub fn get_id(&self, id: u32, w: Option<i32>, h: Option<i32>) -> Option<sprite::Texture> {
         if id > self.sw * self.sh {
             return None;
         }
@@ -107,5 +127,18 @@ impl Spritemap {
 
         let pb = self.sample_rect(x, y, self.w, self.h);
         Some(sprite::texture_raw(pb, (self.w, self.h), w, h))
+    }
+
+    /// Get a sub-region of the spritemap, ignoring usual bounds.
+    /// 
+    /// `tw` and `th` correspond to the `w` and `h` arguments on
+    /// [`sprite::texture`].
+    pub fn get_rect(&self, x: u32, y: u32, w: u32, h: u32, tw: Option<i32>, th: Option<i32>) -> Option<sprite::Texture> {
+        if x+w >= self.dims.0 || y+h >= self.dims.1 {
+            return None;
+        }
+
+        let pb = self.sample_rect(x, y, w, h);
+        Some(sprite::texture_raw(pb, (w, h), tw, th))
     }
 }

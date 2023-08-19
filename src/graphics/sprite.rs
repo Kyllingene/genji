@@ -252,6 +252,10 @@ pub fn text_font_from_file<S1: ToString, S2: ToString>(
 }
 
 /// Creates a [`Texture`] from binary data.
+/// 
+/// `w` and `h` work like HTML image dimensions;
+/// if only one is specified, the other is scaled to match.
+/// If neither, the image keeps a 1px:1coord ratio.
 ///
 /// You must pass an [`ImageFormat`]
 /// (borrowed from [`image`]).
@@ -265,12 +269,12 @@ pub fn text_font_from_file<S1: ToString, S2: ToString>(
 /// # let world = FakeWorld;
 /// # mod sprite {
 /// #   use genji::graphics::sprite::ImageFormat;
-/// #   pub fn texture(d: (), f: ImageFormat, w: i32, h: i32) -> () { () }
+/// #   pub fn texture(d: (), f: ImageFormat, w: Option<i32>, h: Option<i32>) -> () { () }
 /// # }
 /// # let data = ();
 ///
 /// world.spawn((
-///     sprite::texture(data, ImageFormat::Png, 300, 300),
+///     sprite::texture(data, ImageFormat::Png, Some(300), None),
 ///     Point(0, 0),
 /// ));
 /// ```
@@ -309,6 +313,10 @@ where
 }
 
 /// Creates a [`Texture`] from raw pixel data.
+/// 
+/// `w` and `h` work like HTML image dimensions;
+/// if only one is specified, the other is scaled to match.
+/// If neither, the image keeps a 1px:1coord ratio.
 ///
 /// Errors in the data will not cause errors here,
 /// but rather when the texture is drawn.
@@ -322,12 +330,12 @@ where
 /// # let world = FakeWorld;
 /// # mod sprite {
 /// #   use genji::graphics::sprite::ImageFormat;
-/// #   pub fn texture_raw(d: (), w: i32, h: i32) -> () { () }
+/// #   pub fn texture_raw(d: (), dims: (u32, u32), w: Option<i32>, h: Option<i32>) -> () { () }
 /// # }
 /// # let data = ();
 ///
 /// world.spawn((
-///     sprite::texture(data, 300, 300),
+///     sprite::texture_raw(data, (200, 150), Some(300), None),
 ///     Point(0, 0),
 /// ));
 /// ```
@@ -359,6 +367,10 @@ where
 }
 
 /// Creates a [`Texture`] from an image file.
+/// 
+/// `w` and `h` work like HTML image dimensions;
+/// if only one is specified, the other is scaled to match.
+/// If neither, the image keeps a 1px:1coord ratio.
 ///
 /// ```
 /// # use genji::{ecs::World, graphics::{Point, sprite::ImageFormat}};
@@ -369,12 +381,12 @@ where
 /// # let world = FakeWorld;
 /// # mod sprite {
 /// #   use genji::graphics::sprite::ImageFormat;
-/// #   pub fn texture(d: (), f: ImageFormat, w: i32, h: i32) -> () { () }
+/// #   pub fn texture_from_file(path: (), w: Option<i32>, h: Option<i32>) -> () { () }
 /// # }
-/// # let data = ();
+/// # let path = ();
 ///
 /// world.spawn((
-///     sprite::texture(data, ImageFormat::Png, 300, 300),
+///     sprite::texture_from_file(path, Some(300), None),
 ///     Point(0, 0),
 /// ));
 /// ```
