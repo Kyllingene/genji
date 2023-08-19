@@ -1,16 +1,16 @@
 //! The things you're most likely to need when using Genji.
 
 /// Includes a file as a byte slice. Equivalent to
-/// `const _: &[u8] = include_bytes!(_);`.
+/// `pub const _: &[u8] = include_bytes!(_);`.
 ///
 /// ```ignore
-/// // const NAME: &[u8] = include_bytes!("path/to/file.jpg");
+/// // pub const NAME: &[u8] = include_bytes!("path/to/file.jpg");
 /// use_file!(NAME: "path/to/file.jpg");
 /// ```
 #[macro_export]
 macro_rules! use_file {
     ($name:ident: $path:expr) => {
-        const $name: &[u8] = include_bytes!($path);
+        pub const $name: &[u8] = include_bytes!($path);
     };
 }
 
@@ -18,8 +18,8 @@ macro_rules! use_file {
 /// `use_file!` on each file.
 ///
 /// ```ignore
-/// // const NAME_ONE: &[u8] = include_bytes!("path/to/file.jpg");
-/// // const NAME_TWO: &[u8] = include_bytes!("other-path-to/file.ttf");
+/// // pub const NAME_ONE: &[u8] = include_bytes!("path/to/file.jpg");
+/// // pub const NAME_TWO: &[u8] = include_bytes!("other-path-to/file.ttf");
 /// use_files!{
 ///     NAME_ONE: "path/to/file.jpg",
 ///     NAME_TWO: "../other-path/to/file.ttf"
@@ -29,7 +29,7 @@ macro_rules! use_file {
 macro_rules! use_files {
     ($($name:ident: $path:expr),*) => {
         $(
-            const $name: &[u8] = include_bytes!($path);
+            pub const $name: &[u8] = include_bytes!($path);
         )*
     };
 }

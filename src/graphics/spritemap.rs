@@ -28,6 +28,7 @@ use super::sprite::{self, ImageFormat};
 /// sprites via [`Spritemap::get_rect`].
 pub struct Spritemap {
     tex: RgbaImage,
+    dims: (u32, u32),
 
     w: u32,
     h: u32,
@@ -55,6 +56,7 @@ impl Spritemap {
 
         Some(Self {
             tex: data,
+            dims,
 
             w,
             h,
@@ -91,6 +93,7 @@ impl Spritemap {
 
         Some(Self {
             tex: data,
+            dims,
 
             w,
             h,
