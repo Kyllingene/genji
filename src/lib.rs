@@ -81,14 +81,22 @@ pub fn main<T: 'static>(
                     state_ref.keys[Key::Ctrl] = modifiers.ctrl();
                     state_ref.keys[Key::Shift] = modifiers.shift();
                     state_ref.keys[Key::Super] = modifiers.logo();
+                    state_ref.pressed[Key::Alt] = modifiers.alt();
+                    state_ref.pressed[Key::Ctrl] = modifiers.ctrl();
+                    state_ref.pressed[Key::Shift] = modifiers.shift();
+                    state_ref.pressed[Key::Super] = modifiers.logo();
                 }
                 glutin::event::WindowEvent::KeyboardInput { input, .. } => {
                     if let Some(ks) = Key::from_virtual(input.virtual_keycode) {
                         for key in ks {
                             match input.state {
-                                glutin::event::ElementState::Pressed => state_ref.keys[key] = true,
+                                glutin::event::ElementState::Pressed => {
+                                	state_ref.keys[key] = true;
+                                	state_ref.pressed[key] = true;
+                                }
                                 glutin::event::ElementState::Released => {
-                                    state_ref.keys[key] = false
+                                	state_ref.keys[key] = false;
+                                	state_ref.pressed[key] = false;
                                 }
                             }
                         }
