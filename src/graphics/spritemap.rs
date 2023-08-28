@@ -1,14 +1,14 @@
 //! Utilities for loading and using spritemaps.
-//! 
+//!
 //! Spritemaps reduce the amount of space and resources
 //! required to use a large amount of sprites, and give
 //! a convenient holding place for them.
-//! 
+//!
 //! Spritemaps require a default sprite width and
 //! height, for the sake of [`Spritemap::get_id`]; however,
-//! you can retrieve arbitrarily placed and sized 
+//! you can retrieve arbitrarily placed and sized
 //! sprites via [`Spritemap::get_rect`].
-//! 
+//!
 //! Note that retrieving a sprite from a spritemap clones
 //! the sprite data, it doesn't reference it.
 
@@ -20,11 +20,13 @@ use image::RgbaImage;
 
 use super::sprite::{self, ImageFormat};
 
+// TODO: can spritemap textures become Arc<[u8]>?
+
 /// A texture with utilities for retrieving sprites.
-/// 
+///
 /// Spritemaps require a default sprite width and
 /// height, for the sake of [`Spritemap::get_id`]; however,
-/// you can retrieve arbitrarily placed and sized 
+/// you can retrieve arbitrarily placed and sized
 /// sprites via [`Spritemap::get_rect`].
 pub struct Spritemap {
     tex: RgbaImage,
@@ -133,11 +135,19 @@ impl Spritemap {
     }
 
     /// Get a sub-region of the spritemap, ignoring usual bounds.
-    /// 
+    ///
     /// `tw` and `th` correspond to the `w` and `h` arguments on
     /// [`sprite::texture`].
-    pub fn get_rect(&self, x: u32, y: u32, w: u32, h: u32, tw: Option<i32>, th: Option<i32>) -> Option<sprite::Texture> {
-        if x+w >= self.dims.0 || y+h >= self.dims.1 {
+    pub fn get_rect(
+        &self,
+        x: u32,
+        y: u32,
+        w: u32,
+        h: u32,
+        tw: Option<i32>,
+        th: Option<i32>,
+    ) -> Option<sprite::Texture> {
+        if x + w >= self.dims.0 || y + h >= self.dims.1 {
             return None;
         }
 

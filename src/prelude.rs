@@ -32,6 +32,12 @@ macro_rules! use_files {
             pub const $name: &[u8] = include_bytes!($path);
         )*
     };
+
+    ($($name:ident: $path:expr),* ,) => {
+        $(
+            pub const $name: &[u8] = include_bytes!($path);
+        )*
+    };
 }
 
 pub use crate::{

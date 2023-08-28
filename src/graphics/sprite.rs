@@ -8,12 +8,16 @@
 //! [`Text`],
 //! and [`Texture`].
 
+// TODO: can texture initialization take advantage of
+// TODO: Arc<[_]> to avoid re-allocation?
+
 use std::{
     f32::consts::PI,
     fmt::Debug,
     fs::File,
     io::{BufReader, Cursor, Read},
     path::Path,
+    sync::Arc,
 };
 
 use super::{shaders, text, Color};
@@ -154,6 +158,10 @@ pub struct Text {
 /// If using the former, you must pass an [`ImageFormat`]
 /// (borrowed from [`image`]).
 ///
+/// *Note*: `Texture` uses `Arc<[u8]>` to store data, instead
+/// of a `Vec`; this means that cloning a texture is very
+/// cheap, and should be preferred whenever possible.
+///
 /// ```
 /// # use genji::{ecs::World, graphics::{Point, sprite::ImageFormat}};
 /// # struct FakeWorld;
@@ -174,7 +182,7 @@ pub struct Text {
 /// ```
 #[derive(Debug, Clone)]
 pub struct Texture {
-    pub data: Vec<u8>,
+    pub data: Arc<[u8]>,
     pub dimensions: (u32, u32),
     pub w: i32,
     pub h: i32,
@@ -252,7 +260,7 @@ pub fn text_font_from_file<S1: ToString, S2: ToString>(
 }
 
 /// Creates a [`Texture`] from binary data.
-/// 
+///
 /// `w` and `h` work like HTML image dimensions;
 /// if only one is specified, the other is scaled to match.
 /// If neither, the image keeps a 1px:1coord ratio.
@@ -305,7 +313,7 @@ where
     };
 
     Some(Texture {
-        data: data.into_raw(),
+        data: data.into_raw().into(),
         dimensions,
         w,
         h,
@@ -313,7 +321,7 @@ where
 }
 
 /// Creates a [`Texture`] from raw pixel data.
-/// 
+///
 /// `w` and `h` work like HTML image dimensions;
 /// if only one is specified, the other is scaled to match.
 /// If neither, the image keeps a 1px:1coord ratio.
@@ -359,7 +367,7 @@ where
     };
 
     Texture {
-        data,
+        data: data.into(),
         dimensions,
         w,
         h,
@@ -367,7 +375,7 @@ where
 }
 
 /// Creates a [`Texture`] from an image file.
-/// 
+///
 /// `w` and `h` work like HTML image dimensions;
 /// if only one is specified, the other is scaled to match.
 /// If neither, the image keeps a 1px:1coord ratio.
@@ -419,7 +427,7 @@ pub fn texture_from_file<S: ToString>(path: S, w: Option<i32>, h: Option<i32>) -
     };
 
     Some(Texture {
-        data: data.into_raw(),
+        data: data.into_raw().into(),
         dimensions,
         w,
         h,

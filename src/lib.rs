@@ -91,12 +91,12 @@ pub fn main<T: 'static>(
                         for key in ks {
                             match input.state {
                                 glutin::event::ElementState::Pressed => {
-                                	state_ref.keys[key] = true;
-                                	state_ref.pressed[key] = true;
+                                    state_ref.keys[key] = true;
+                                    state_ref.pressed[key] = true;
                                 }
                                 glutin::event::ElementState::Released => {
-                                	state_ref.keys[key] = false;
-                                	state_ref.pressed[key] = false;
+                                    state_ref.keys[key] = false;
+                                    state_ref.pressed[key] = false;
                                 }
                             }
                         }
